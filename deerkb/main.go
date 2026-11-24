@@ -2,16 +2,12 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
-	"net"
 	"net/http"
 	"os"
-	"os/signal"
 	"path/filepath"
 	"runtime"
 	"syscall"
-	"time"
 	"unsafe"
 
 	webview "github.com/webview/webview_go"
@@ -31,13 +27,17 @@ func init() {
 
 func main() {
 	sim := flag.Bool("simulate", false, "use a simulated A75 ISO instead of a real keyboard")
-	port := flag.Int("port", 7842, "localhost port for the app's internal server")
-	headless := flag.Bool("headless", false, "run the server without the window (for tests)")
 	flag.Parse()
 
 	dir := appDir()
 	setupLog(dir)
 	log.Printf("DeerKB %s starting (simulate=%t)", appVersion, *sim)
+
+	if !claimSingleInstance() {
+		log.Printf("another DeerKB is already running")
+		messageBox("DeerKB", "DeerKB is already running")
+		return
+	}
 
 	if err := hid.Init(); err != nil {
 		log.Printf("hid init: %v", err)
@@ -56,35 +56,32 @@ func main() {
 		os.Exit(0)
 	}
 
-	addr := fmt.Sprintf("127.0.0.1:%d", *port)
-	url := "http://" + addr + "/"
-	ln, err := net.Listen("tcp", addr)
-	if err != nil {
-		// Most likely a copy is already running and serving the same window.
-		log.Printf("listen: %v", err)
-		if *headless {
-			return
-		}
-	} else {
-		srv := &http.Server{Handler: newMux(kb, store, quit, *port), ReadHeaderTimeout: 5 * time.Second}
-		go func() { log.Printf("http: %v", srv.Serve(ln)) }()
-	}
-
-	if *headless {
-		fmt.Println("DeerKB running at", url)
-		sig := make(chan os.Signal, 1)
-		signal.Notify(sig, os.Interrupt)
-		<-sig
-		quit()
-	}
-
-	openApp(url)
+	openApp(newMux(kb, store, quit))
 	quit()
 }
 
+// claimSingleInstance returns false when another DeerKB already holds the named mutex. The handle is
+// never closed: it lasts for the life of the process.
+func claimSingleInstance() bool {
+	name, _ := syscall.UTF16PtrFromString(`Global\DeerKBSingleInstance`)
+	createMutex := syscall.NewLazyDLL("kernel32.dll").NewProc("CreateMutexW")
+	h, _, err := createMutex.Call(0, 0, uintptr(unsafe.Pointer(name)))
+	if h == 0 {
+		log.Printf("single instance mutex: %v", err)
+		return true
+	}
+	return err != syscall.ERROR_ALREADY_EXISTS
+}
+
 // openApp shows the UI in a native window with no address bar or browser tabs. It blocks until the
-// window closes. The window is a WebView2 surface, which Windows 10 and 11 ship with.
-func openApp(url string) {
+// window closes. The window is a WebView2 surface, which Windows 10 and 11 ship with. The page talks to
+// h in-process through the rpc binding, so the app opens no network port.
+func openApp(h http.Handler) {
+	page, err := webFS.ReadFile("web/index.html")
+	if err != nil {
+		log.Printf("read page: %v", err)
+		return
+	}
 	w := webview.New(false)
 	if w == nil {
 		log.Printf("WebView2 runtime not available")
@@ -97,7 +94,14 @@ func openApp(url string) {
 	w.SetSize(960, 640, webview.HintMin)
 	// No right-click menu: it would show browser commands such as Reload and View Source.
 	w.Init(`document.addEventListener("contextmenu", function (e) { e.preventDefault(); });`)
-	w.Navigate(url)
+	w.Init(bridgeShim)
+	if err := w.Bind("rpc", rpcBinding(h)); err != nil {
+		log.Printf("bind rpc: %v", err)
+	}
+	if err := w.Bind("quit", w.Terminate); err != nil {
+		log.Printf("bind quit: %v", err)
+	}
+	w.SetHtml(string(page))
 	w.Run()
 }
 

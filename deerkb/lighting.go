@@ -103,14 +103,21 @@ func scaleRGB(rgb [keySlots][3]byte, base int) [keySlots][3]byte {
 	return rgb
 }
 
-// lightingFrames builds the AE packets for one effect. Speed is passed through as the SDK does (0-9);
-// the SDK notes the wire range may be inverted and unconfirmed.
+// speedToFirmware maps the user's speed (0 = slowest, 9 = fastest) to the firmware byte, which is inverted:
+// user 0 -> 9 (slowest), user 9 -> 1 (fastest). The result is never 0, so speed cannot read as off.
+// The direction is from the SDK comments and is not confirmed on hardware.
+func speedToFirmware(userSpeed int) byte {
+	u := min(max(userSpeed, 0), 9)
+	return byte(1 + ((9-u)*8+4)/9) // (9-u)*8/9 rounded half up, plus 1
+}
+
+// lightingFrames builds the AE packets for one effect. The mode frame carries speedToFirmware(speed) at index 6.
 func lightingFrames(eff lightEffect, brightness, speed byte, rgb [keySlots][3]byte) [][]byte {
 	switch eff.Kind {
 	case "off":
 		return [][]byte{padFrame(cmdLight, 0x01, 0x00, 0x00, 0x05, 0x09)}
 	case "mode":
-		f := padFrame(cmdLight, 0x01, 0x00, 0x00, eff.Code, brightness, speed)
+		f := padFrame(cmdLight, 0x01, 0x00, 0x00, eff.Code, brightness, speedToFirmware(int(speed)))
 		return [][]byte{f}
 	}
 	var out [][]byte

@@ -29,9 +29,9 @@ type server struct {
 	quit  func()
 }
 
-// newMux serves the UI and its JSON API. Only the app's own localhost address is answered, and every
-// write must carry X-DeerKB: a plain web page cannot send that header cross-site without a preflight.
-func newMux(kb *Keyboard, store *profileStore, quit func(), port int) http.Handler {
+// newMux serves the UI and its JSON API. It opens no socket: the window reaches it in-process through
+// serveInProcess. Every write must carry X-DeerKB, which the page sets on each request.
+func newMux(kb *Keyboard, store *profileStore, quit func()) http.Handler {
 	s := &server{kb: kb, store: store, quit: quit}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", s.index)
@@ -55,15 +55,7 @@ func newMux(kb *Keyboard, store *profileStore, quit func(), port int) http.Handl
 	mux.HandleFunc("GET /api/profiles/{name}/export", s.profileExport)
 	mux.HandleFunc("POST /api/quit", s.quitApp)
 
-	allowed := map[string]bool{
-		fmt.Sprintf("127.0.0.1:%d", port): true,
-		fmt.Sprintf("localhost:%d", port): true,
-	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !allowed[r.Host] {
-			http.Error(w, "forbidden", http.StatusForbidden)
-			return
-		}
 		if r.Method != http.MethodGet && r.Header.Get("X-DeerKB") != "1" {
 			http.Error(w, "forbidden", http.StatusForbidden)
 			return

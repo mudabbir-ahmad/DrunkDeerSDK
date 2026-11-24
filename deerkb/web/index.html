@@ -44,14 +44,15 @@ button:disabled, input:disabled, select:disabled { cursor: not-allowed; opacity:
 [inert] { opacity: .55; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
-.ic { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.ic { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .grow { flex: 1; }
 
 /* shell */
 .app { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; height: 100vh; }
-.topbar { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; flex-wrap: wrap; gap: 12px; min-height: 48px; padding: 6px 16px; background: var(--glass); -webkit-backdrop-filter: blur(24px) saturate(1.6); backdrop-filter: blur(24px) saturate(1.6); border-bottom: 1px solid var(--bd); }
-.brand { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 600; }
-.logo { width: 20px; height: 20px; border-radius: 6px; background: var(--fg); }
+.topbar { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; min-height: 44px; padding: 6px 16px; background: var(--glass); -webkit-backdrop-filter: blur(24px) saturate(1.6); backdrop-filter: blur(24px) saturate(1.6); border-bottom: 1px solid var(--bd); }
+.brand { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; }
+/* placeholder brand mark: replace the DK text with the real icon later */
+.brand-mark { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 6px; background: var(--accent-soft); color: var(--accent); font-size: 9px; font-weight: 600; letter-spacing: .02em; }
 .chip { padding: 2px 10px; border: 1px solid var(--bd-strong); border-radius: 999px; background: var(--raised); color: var(--mut); font-size: 12px; white-space: nowrap; }
 .conn { display: flex; align-items: center; gap: 6px; color: var(--mut); font-size: 13px; }
 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--mut); }
@@ -59,12 +60,12 @@ button:disabled, input:disabled, select:disabled { cursor: not-allowed; opacity:
 .dot[data-tone="info"] { background: var(--info); }
 .dot[data-tone="bad"] { background: var(--bad); }
 .main { display: grid; grid-template-columns: 280px minmax(0, 1fr) 340px; grid-template-rows: minmax(0, 1fr); gap: 16px; min-height: 0; padding: 16px; overflow: hidden; }
-.pane { display: flex; flex-direction: column; gap: 16px; min-width: 0; min-height: 0; overflow: auto; }
+.pane { display: flex; flex-direction: column; gap: 8px; min-width: 0; min-height: 0; overflow: auto; }
 .pane > .card { flex: none; }
 .side { grid-column: 1; }
 .center { grid-column: 2; }
-.inspector { grid-column: 3; gap: 12px; }
-.footer { display: flex; align-items: center; flex-wrap: wrap; gap: 12px 16px; padding: 12px 16px; background: var(--panel); border-top: 1px solid var(--bd); }
+.inspector { grid-column: 3; gap: 8px; }
+.footer { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 16px; padding: 8px 16px; background: var(--panel); border-top: 1px solid var(--bd); }
 .foot-status { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .dirty { display: flex; align-items: center; gap: 8px; font-weight: 500; }
 .dirty::before { content: ""; flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--mut); }
@@ -73,11 +74,11 @@ button:disabled, input:disabled, select:disabled { cursor: not-allowed; opacity:
 
 /* cards and text */
 .card { min-width: 0; padding: 16px; background: var(--card); border: 1px solid var(--bd); border-radius: 12px; }
-.col { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.col { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .profile-bar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px; }
 .profile-bar .field { flex: 1 1 220px; }
 .profile-bar > .muted { flex: 1 0 100%; }
-.eyebrow { margin: 0; font-size: 15px; font-weight: 600; color: var(--fg); }
+.eyebrow { margin: 0; font-size: 14px; font-weight: 600; color: var(--fg); }
 .muted { margin: 0; color: var(--mut); font-size: 13px; }
 .row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .between { justify-content: space-between; }
@@ -90,6 +91,7 @@ button:disabled, input:disabled, select:disabled { cursor: not-allowed; opacity:
 .range-out { display: flex; align-items: center; gap: 8px; }
 .range-out input { flex: 1; }
 .range-out output { min-width: 16px; color: var(--fg); text-align: right; }
+.range-ends { display: flex; justify-content: space-between; padding-right: 24px; color: var(--mut); font-size: 12px; }
 input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 14px; margin: 0; background: transparent; cursor: pointer; }
 input[type="range"]::-webkit-slider-runnable-track { height: 4px; border-radius: 999px; background: var(--track); }
 input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; margin-top: -5px; border: 1px solid rgba(0,0,0,.35); border-radius: 50%; background: #ededf0; }
@@ -98,7 +100,8 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border: 1px s
 input[type="color"] { width: 40px; height: 36px; padding: 0; border: 1px solid var(--bd-strong); border-radius: 8px; background: none; }
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .target { margin: 0; color: var(--mut); font-size: 13px; }
-.notice { margin: 0; padding: 8px 12px; border: 1px solid var(--bd); border-left: 2px solid var(--warn); border-radius: 12px; background: var(--card); font-size: 13px; }
+.notice { display: flex; align-items: center; gap: 8px; margin: 0; padding: 8px 12px; border: 1px solid var(--bd); border-left: 2px solid var(--warn); border-radius: 12px; background: var(--card); font-size: 13px; }
+.notice .ic { color: var(--warn); }
 .search { display: block; }
 
 /* buttons */
@@ -128,6 +131,17 @@ input[type="color"] { width: 40px; height: 36px; padding: 0; border: 1px solid v
 .swatches { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 6px; }
 .swatch { aspect-ratio: 1; min-width: 0; padding: 0; border: 1px solid var(--bd-strong); border-radius: 8px; }
 .swatch:hover { border-color: var(--fg); }
+.swatch[aria-pressed="true"] { border-color: var(--accent); }
+.swatch-wrap { position: relative; min-width: 0; }
+.swatch-x { position: absolute; top: -5px; right: -5px; display: grid; place-items: center; width: 16px; height: 16px; padding: 0; border: 1px solid var(--bd-strong); border-radius: 50%; background: var(--raised); color: var(--fg); font-size: 11px; line-height: 1; }
+.swatch-x:hover { background: var(--hover); }
+.swatch-x .ic { width: 10px; height: 10px; }
+.cur { flex: none; width: 36px; height: 36px; border: 1px solid var(--bd-strong); border-radius: 8px; }
+.fx-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.fx { min-height: 36px; padding: 6px 10px; border: 1px solid var(--bd-strong); border-radius: 8px; background: var(--raised); color: var(--fg); text-align: left; overflow-wrap: anywhere; }
+.fx:hover:not(:disabled) { background: var(--hover); }
+.fx[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+.note { margin: 0; color: var(--mut); font-size: 12px; }
 .btn, .tb-btn, .seg button, .prof, .key, .input, .swatch, .switch input { transition: background-color .15s ease, border-color .15s ease, color .15s ease; }
 
 /* profiles and device */
@@ -149,20 +163,39 @@ input[type="color"] { width: 40px; height: 36px; padding: 0; border: 1px solid v
 
 /* board */
 .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-.sel-summary { color: var(--mut); font-size: 13px; }
+.sel-count { color: var(--fg); font-weight: 500; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.sel-count[data-none="true"] { color: var(--mut); font-weight: 400; }
 .board-wrap { container-type: inline-size; }
 .canvas { position: relative; width: 100%; user-select: none; }
-.key { position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center; height: calc(var(--u) - 4px); padding: 2px 3px; border: 1px solid var(--key-bd); border-radius: 6px; background: var(--key); color: var(--key-fg); font-size: max(9px, calc(var(--u) * .3)); line-height: 1.1; overflow: hidden; }
+.key { position: absolute; display: flex; flex-direction: column; align-items: center; height: calc(var(--u) - 6px); padding: 3px 3px 2px; border: 1px solid var(--key-bd); border-radius: 6px; background: var(--key); color: var(--key-fg); font-size: max(9px, calc(var(--u) * .3)); line-height: 1.1; overflow: hidden; }
 .key:hover:not(:disabled) { border-color: var(--bd-hover); }
-.key[aria-pressed="true"], .key[aria-pressed="true"]:hover:not(:disabled) { border-color: var(--accent); background: var(--accent-soft); color: var(--fg); }
+/* selected: a solid 2px accent border, a faint accent fill and a corner dot */
+.key[aria-pressed="true"], .key[aria-pressed="true"]:hover:not(:disabled) { border: 2px solid var(--accent); background: var(--accent-soft); color: var(--fg); }
 .key:disabled { border-style: dashed; opacity: .4; }
-.key .legend { max-width: 100%; overflow: hidden; white-space: nowrap; font-weight: 500; }
-.key small { max-width: 100%; overflow: hidden; white-space: nowrap; font-size: .85em; opacity: .85; }
+.key .legend { flex: 1 1 auto; display: flex; align-items: center; justify-content: center; min-height: 0; max-width: 100%; overflow: hidden; white-space: nowrap; font-weight: 500; }
+.key .hex { max-width: 100%; overflow: hidden; white-space: nowrap; font-size: .85em; color: var(--mut); font-variant-numeric: tabular-nums; }
+/* the bottom strip always shows the actuation point */
+.key .act-label { max-width: 100%; overflow: hidden; white-space: nowrap; font-size: max(8px, calc(var(--u) * .2)); line-height: 1; color: var(--mut); font-variant-numeric: tabular-nums; }
+.key[aria-pressed="true"] .act-label { color: var(--accent); }
 .pip { position: absolute; top: 3px; left: 3px; width: 6px; height: 6px; border-radius: 50%; background: var(--mut); }
+.sel-dot { position: absolute; top: 4px; right: 4px; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); display: none; }
+.key[aria-pressed="true"] .sel-dot { display: block; }
+/* live overlay: a bar rising from the bottom to the depth, and a line at the actuation point */
+.depth-fill { position: absolute; left: 0; bottom: 0; width: 3px; background: var(--mut); pointer-events: none; }
+.act-line { position: absolute; left: 0; right: 0; height: 2px; background: var(--fg); pointer-events: none; }
+.key .legend, .key .hex, .key .act-label { position: relative; }
+.key[data-act="on"], .key[data-act="on"]:hover:not(:disabled) { border-color: var(--accent); background: var(--accent-soft); color: var(--fg); }
+.key[data-act="on"] .depth-fill { background: var(--accent); }
 
 /* live */
 .scale { display: flex; align-items: center; gap: 8px; color: var(--mut); font-size: 12px; }
 .scale .bar { flex: 1; height: 4px; border-radius: 999px; background: var(--track); }
+.readout { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; }
+.readout li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto auto; gap: 12px; align-items: baseline; padding: 4px 8px; border-radius: 8px; background: var(--raised); font-size: 13px; }
+.readout .rd-empty { display: block; background: none; color: var(--mut); }
+.readout .rd-key { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-weight: 500; }
+.readout .rd-num { color: var(--mut); font-variant-numeric: tabular-nums; text-align: right; }
+.readout li[data-act="on"] .rd-state { color: var(--accent); }
 
 /* toasts and dialog */
 dialog { width: min(420px, calc(100% - 32px)); padding: 20px; border: 1px solid var(--bd-strong); border-radius: 12px; background: var(--card); color: var(--fg); box-shadow: 0 16px 40px rgba(0,0,0,.5); }
@@ -196,20 +229,34 @@ dialog p { margin: 0 0 16px; color: var(--mut); }
 </head>
 <body>
 <svg class="sprite" aria-hidden="true" focusable="false">
-  <symbol id="i-redetect" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></symbol>
-  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></symbol>
-  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+  <!-- Lucide icons (ISC licence), inlined as symbols; see the script header -->
+  <symbol id="i-redetect" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></symbol>
+  <symbol id="i-power" viewBox="0 0 24 24"><path d="M12 2v10"/><path d="M18.4 6.6a9 9 0 1 1-12.77.04"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><rect x="14" y="3" width="5" height="18" rx="1"/><rect x="5" y="3" width="5" height="18" rx="1"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m17 8-5-5-5 5"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></symbol>
+  <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></symbol>
+  <symbol id="i-save" viewBox="0 0 24 24"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol>
 </svg>
 
 <header class="topbar">
-  <div class="brand"><span class="logo" aria-hidden="true"></span>DeerKB</div>
+  <div class="brand"><span class="brand-mark" id="brandMark" aria-hidden="true">DK</span>DeerKB</div>
   <span class="chip" id="chip">No keyboard</span>
   <span class="conn" role="status"><span class="dot" id="connDot"></span><span id="connText">Checking…</span></span>
   <span class="grow"></span>
   <div class="tb-group">
     <button type="button" class="tb-btn" id="themeBtn"><svg class="ic" aria-hidden="true"><use id="themeIcon" href="#i-moon"></use></svg></button>
     <button type="button" class="tb-btn" id="redetect" title="Re-read keyboard" aria-label="Re-read keyboard"><svg class="ic" aria-hidden="true"><use href="#i-redetect"></use></svg></button>
-    <button type="button" class="btn ghost" id="quit">Quit</button>
+    <button type="button" class="btn ghost" id="quit"><svg class="ic" aria-hidden="true"><use href="#i-power"></use></svg>Quit</button>
   </div>
 </header>
 
@@ -219,12 +266,12 @@ dialog p { margin: 0 0 16px; color: var(--mut); }
       <h2 class="eyebrow" id="profH">Profiles</h2>
       <label class="search"><span class="sr">Filter profiles</span><input id="filter" class="input" type="search" placeholder="Filter profiles"></label>
       <div class="acts">
-        <button type="button" class="btn" id="pNew" title="New profile">New</button>
-        <button type="button" class="btn" id="pDup" title="Duplicate the editor as a new profile">Duplicate</button>
-        <button type="button" class="btn" id="pRen" title="Rename the open saved profile">Rename</button>
-        <button type="button" class="btn" id="pDel" title="Delete the open saved profile">Delete</button>
-        <button type="button" class="btn" id="pImport" title="Import a profile file (.json)">Import</button>
-        <button type="button" class="btn" id="pExport" title="Export the saved file of the open profile">Export</button>
+        <button type="button" class="btn" id="pNew" title="New profile"><svg class="ic" aria-hidden="true"><use href="#i-plus"></use></svg>New</button>
+        <button type="button" class="btn" id="pDup" title="Duplicate the editor as a new profile"><svg class="ic" aria-hidden="true"><use href="#i-copy"></use></svg>Duplicate</button>
+        <button type="button" class="btn" id="pRen" title="Rename the open saved profile"><svg class="ic" aria-hidden="true"><use href="#i-pencil"></use></svg>Rename</button>
+        <button type="button" class="btn" id="pDel" title="Delete the open saved profile"><svg class="ic" aria-hidden="true"><use href="#i-trash"></use></svg>Delete</button>
+        <button type="button" class="btn" id="pImport" title="Import a profile file (.json)"><svg class="ic" aria-hidden="true"><use href="#i-upload"></use></svg>Import</button>
+        <button type="button" class="btn" id="pExport" title="Export the saved file of the open profile"><svg class="ic" aria-hidden="true"><use href="#i-download"></use></svg>Export</button>
       </div>
       <form class="rename" id="renForm" hidden>
         <label class="field">New name<input id="renName" class="input" maxlength="40" autocomplete="off"></label>
@@ -257,10 +304,9 @@ dialog p { margin: 0 0 16px; color: var(--mut); }
   <section class="pane center" aria-label="Keyboard editor">
     <div class="card profile-bar">
       <label class="field">Profile name<input id="pname" class="input" maxlength="40" placeholder="Name this profile"></label>
-      <button type="button" class="btn primary" id="pSave">Save profile</button>
-      <p class="muted" id="presetNote" hidden>Built-in preset. Duplicate it to make an editable copy.</p>
+      <button type="button" class="btn primary" id="pSave"><svg class="ic" aria-hidden="true"><use href="#i-save"></use></svg>Save profile</button>
     </div>
-    <p class="notice" id="offline" hidden>Connect your A75 to edit. Profiles still work.</p>
+    <p class="notice" id="offline" hidden><svg class="ic" aria-hidden="true"><use href="#i-warn"></use></svg><span>Connect your A75 to edit. Profiles still work.</span></p>
 
     <section class="card col" id="boardCard" aria-label="Keyboard board">
       <div class="toolbar">
@@ -269,12 +315,13 @@ dialog p { margin: 0 0 16px; color: var(--mut); }
           <button type="button" class="chip-btn" data-group="numerals">Numerals</button>
           <button type="button" class="chip-btn" data-group="character">Characters</button>
         </div>
-        <span class="sel-summary" id="selSum" aria-live="polite"></span>
         <span class="grow"></span>
-        <button type="button" class="btn ghost" id="selAll">Select all</button>
-        <button type="button" class="btn ghost" id="selClear">Clear</button>
+        <span class="sel-count" id="selSum" aria-live="polite"></span>
+        <button type="button" class="btn" id="selClear">Clear</button>
+        <button type="button" class="btn" id="selAll">Select all</button>
         <button type="button" class="btn" id="showVals" aria-pressed="false">Show values</button>
       </div>
+      <p class="muted" id="selHint" hidden></p>
       <div class="board-wrap"><div class="canvas" id="canvas"></div></div>
     </section>
 
@@ -285,6 +332,8 @@ dialog p { margin: 0 0 16px; color: var(--mut); }
       </div>
       <p class="muted" id="liveText"></p>
       <div class="scale"><span>0 mm</span><span class="bar" aria-hidden="true"></span><span id="liveMax"></span></div>
+      <ul class="readout" id="liveList" hidden></ul>
+      <p class="note">Line = actuation point. Bar = current depth. Accent = actuated.</p>
     </section>
   </section>
 
@@ -323,22 +372,36 @@ dialog p { margin: 0 0 16px; color: var(--mut); }
     </section>
 
     <section class="col" id="p-lighting" hidden>
-      <label class="field">Effect<select id="effect" class="input"></select></label>
-      <label class="field">Brightness
+      <div class="col">
+        <span class="field-label">Effect</span>
+        <div id="effects" class="col"></div>
+      </div>
+      <label class="field" id="brightBox">Brightness
         <span class="range-out"><input id="bright" type="range" min="0" max="9"><output id="brightOut"></output></span>
       </label>
-      <label class="field">Speed
-        <span class="range-out"><input id="speed" type="range" min="0" max="9"><output id="speedOut"></output></span>
-      </label>
-      <div class="col">
-        <span class="field-label" id="swLabel">Paint colour</span>
-        <div class="swatches" id="swatches" role="group" aria-labelledby="swLabel"></div>
-        <div class="row">
-          <label class="field">Custom colour<input id="paint" type="color" value="#ffffff"></label>
-          <button type="button" class="btn" id="paintBtn">Paint selected keys</button>
-        </div>
+      <div class="col" id="speedBox">
+        <label class="field">Speed
+          <span class="range-out"><input id="speed" type="range" min="0" max="9"><output id="speedOut"></output></span>
+          <span class="range-ends" aria-hidden="true"><span>Slowest</span><span>Fastest</span></span>
+        </label>
+        <p class="note">Speed is sent as the firmware value; its direction is not yet confirmed on hardware.</p>
       </div>
-      <p class="muted">Per-key colours are used only by Custom light. Only keys with an LED can be painted.</p>
+      <div class="col">
+        <div class="row"><button type="button" class="btn" id="previewBtn" aria-pressed="false"><svg class="ic" aria-hidden="true"><use id="previewIcon" href="#i-play"></use></svg>Preview</button></div>
+        <p class="note">Preview: approximate, not the keyboard's exact animation</p>
+      </div>
+      <div class="col" id="paintBox">
+        <span class="field-label" id="swLabel">Colour</span>
+        <div class="row">
+          <span class="cur" id="curSw" aria-hidden="true"></span>
+          <label class="field">Current colour<input id="paint" type="color"></label>
+        </div>
+        <div class="swatches" id="swatches" role="group" aria-labelledby="swLabel"></div>
+        <div class="row"><button type="button" class="btn" id="addColour"><svg class="ic" aria-hidden="true"><use href="#i-plus"></use></svg>Add colour</button></div>
+        <div class="row"><button type="button" class="btn" id="paintBtn">Paint selected</button></div>
+        <p class="note" id="paintLine" aria-live="polite"></p>
+        <p class="note">Per-key colours are used only by Custom light. Only keys with an LED can be painted.</p>
+      </div>
       <div class="row"><button type="button" class="btn primary" id="applyLight">Apply lighting</button></div>
     </section>
 
@@ -360,7 +423,7 @@ dialog p { margin: 0 0 16px; color: var(--mut); }
         <button type="button" class="btn ghost" id="resetRemap">Reset layer</button>
       </div>
       <div class="row"><button type="button" class="btn primary" id="applyRemap">Apply remap</button></div>
-      <p class="muted" id="lockedNote"></p>
+      <p class="muted row" id="lockedNote"><svg class="ic" aria-hidden="true"><use href="#i-lock"></use></svg><span id="lockedText"></span></p>
       <p class="muted">Set on selection changes the chosen layer in the editor. Fn cannot be remapped.</p>
     </section>
   </aside>
@@ -388,6 +451,7 @@ dialog p { margin: 0 0 16px; color: var(--mut); }
 <div class="toasts" id="toasts"></div>
 
 <script>
+// Icons: Lucide (https://lucide.dev), licensed under the ISC licence. The SVG paths are inlined in the sprite above.
 const $ = (s) => document.querySelector(s);
 const enc = encodeURIComponent;
 const clone = (v) => structuredClone(v);
@@ -397,12 +461,19 @@ const SECTIONS = ['actuation', 'lighting', 'remap'];
 const THEME_KEY = 'deerkb-theme';
 // Same rule as cleanName in profile.go, so a name accepted here is accepted by the server.
 const NAME_RE = /^[A-Za-z0-9_()-]([A-Za-z0-9 _()-]{0,38}[A-Za-z0-9_()-])?$/;
-const KIND_LABEL = { off: 'Off', custom: 'Custom', mode: 'Modes' };
+const KIND_LABEL = { off: 'Off', custom: 'Custom', mode: 'Presets' };
 const TOAST_LABEL = { ok: 'Done', info: 'Note', error: 'Error' };
 const SWATCHES = [
   ['White', '#ffffff'], ['Red', '#ff3b30'], ['Orange', '#ff7a1a'], ['Yellow', '#ffd60a'],
   ['Green', '#34c759'], ['Cyan', '#32c5ff'], ['Blue', '#0a84ff'], ['Purple', '#bf5af2'],
 ];
+// The colour used until the user picks one: a fixed value, never generated.
+const DEFAULT_COLOUR = SWATCHES[0][1];
+const DEFAULT_HEX = SWATCHES.map(([, c]) => c);
+const PALETTE_KEY = 'deerkb.palette';
+const PALETTE_MAX = 16;
+const TAU = Math.PI * 2;
+const ACT_HYST = 0.05; // mm: a key releases this far above its actuation point, and counts as pressed past it
 // Common USB HID usages for the remap target list.
 const HID_USAGES = [
   ['None', 0x00],
@@ -424,6 +495,10 @@ const S = {
   sel: new Set(), section: 'actuation', layer: 0, showValues: false,
   keyEls: [],
   live: false, liveTimer: 0, inView: true, depth: {},
+  actuated: new Set(), // slots that have actuated, kept across polls for the hysteresis in depthState
+  palette: [], colour: DEFAULT_COLOUR, // palette is the swatch list; colour is the current paint colour
+  pos: new Map(), // slot to normalised board position, for the preview
+  preview: false, previewRaf: 0, previewT0: 0,
   fwBefore: null,
   theme: 'dark',
 };
@@ -483,6 +558,37 @@ const fwText = (v) => (v ? `FW ${v}` : '—');
 const selCount = () => [...S.sel].filter((s) => s !== 76).length; // ISO Enter's two halves count as one key
 const isPreset = (name) => S.presets.includes(name);
 
+// storageGet and storageSet are the only code that touches localStorage. Reading window.localStorage itself can
+// throw when the browser blocks storage, so both calls sit inside try: a failed read gives null, a failed write is
+// dropped, and neither throws.
+function storageGet(key) {
+  try {
+    return window.localStorage.getItem(key);
+  } catch (e) {
+    return null;
+  }
+}
+
+function storageSet(key, value) {
+  try {
+    window.localStorage.setItem(key, value);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+// icon returns an inline SVG that uses one symbol from the sprite, for buttons built in script.
+function icon(id) {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('class', 'ic');
+  svg.setAttribute('aria-hidden', 'true');
+  const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+  use.setAttribute('href', `#i-${id}`);
+  svg.append(use);
+  return svg;
+}
+
 // lum is the perceived brightness of a #rrggbb colour, used to pick black or white text.
 function lum(c) {
   const n = parseInt(c.slice(1), 16);
@@ -498,7 +604,7 @@ function blank() {
     rapid_trigger: false,
     turbo: false,
     scale: 'auto',
-    lighting: { effect: 'off', brightness: 9, speed: 4, colors: Array(n).fill('#ffffff') },
+    lighting: { effect: 'off', brightness: 9, speed: 4, colors: Array(n).fill(DEFAULT_COLOUR) },
     remap: clone(S.layout.defaultRemap),
   };
 }
@@ -612,7 +718,8 @@ function renderDevice() {
 // renderAccess locks editing while disconnected and write buttons while the keyboard cannot take writes.
 function renderAccess() {
   const edit = canEdit();
-  for (const id of ['#boardCard', '#livePanel', '#inspector']) $(id).inert = !edit;
+  // the board canvas, not the whole card: the toolbar's Select all and Clear stay usable while disconnected
+  for (const id of ['#canvas', '#livePanel', '#inspector']) $(id).inert = !edit;
   $('#offline').hidden = !S.status || edit;
   const write = canWrite();
   const why = writeReason();
@@ -638,29 +745,25 @@ async function loadProfiles() {
   try {
     const r = await api('GET', '/api/profiles');
     S.presets = r.presets || [];
-    S.profiles = r.saved || [];
+    // presets are lighting effects, not profiles: a preset name is never listed or edited as a profile
+    S.profiles = (r.saved || []).filter((n) => !isPreset(n));
     touch();
   } catch (e) {
     toast(`Could not list profiles: ${e.message}`, 'error');
   }
 }
 
+// renderProfiles lists the saved profiles only. Lighting presets live in the Lighting tab, not here.
 function renderProfiles() {
   const q = S.filter.trim().toLowerCase();
-  const presets = S.presets.filter((n) => n.toLowerCase().includes(q));
   const saved = S.profiles.filter((n) => n.toLowerCase().includes(q));
   $('#plist').replaceChildren(
-    ...profileGroup('Presets', presets, 'No presets match.'),
     ...profileGroup('Saved', saved, q ? 'No saved profiles match.' : 'None yet. Save a profile or import a file.'),
   );
-  const preset = isPreset(S.current);
-  $('#pSave').disabled = preset;
-  $('#pSave').title = preset ? 'Built-in presets are read-only. Duplicate it to edit.' : '';
-  $('#presetNote').hidden = !preset;
-  $('#pRen').disabled = !S.current || preset;
-  $('#pDel').disabled = !S.current || preset;
+  $('#pRen').disabled = !S.current;
+  $('#pDel').disabled = !S.current;
   $('#pExport').disabled = !S.current;
-  if (!S.current || preset) closeRename();
+  if (!S.current) closeRename();
 }
 
 // profileGroup returns a heading and its names, or a note when the group is empty.
@@ -875,7 +978,7 @@ function layoutBoard() {
 const measureCtx = document.createElement('canvas').getContext('2d');
 function fitLegend(k, b, u) {
   const el = b.querySelector('.legend');
-  const avail = k.w * u - 12; // button width less 3px padding and 1px border on each side
+  const avail = k.w * u - 14; // button width (k.w * u less 6px of gap) less 3px padding and 1px border on each side
   measureCtx.font = `600 100px ${getComputedStyle(el).fontFamily}`;
   const ratio = measureCtx.measureText(el.textContent).width / 100 || 1;
   el.style.fontSize = `${Math.min(Math.max(9, u * 0.3), avail / ratio)}px`;
@@ -886,15 +989,28 @@ function buildBoard() {
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'key';
-    b.style.left = `calc(var(--u) * ${k.x} + 2px)`;
-    b.style.top = `calc(var(--u) * ${k.y} + 2px)`;
-    b.style.width = `calc(var(--u) * ${k.w} - 4px)`;
+    b.style.left = `calc(var(--u) * ${k.x} + 3px)`;
+    b.style.top = `calc(var(--u) * ${k.y} + 3px)`;
+    b.style.width = `calc(var(--u) * ${k.w} - 6px)`;
+    // the depth bar and actuation line come first so the text paints over them
+    const fill = document.createElement('span');
+    fill.className = 'depth-fill';
+    const line = document.createElement('span');
+    line.className = 'act-line';
     const pip = document.createElement('span');
     pip.className = 'pip';
+    const dot = document.createElement('span');
+    dot.className = 'sel-dot';
     const legend = document.createElement('span');
     legend.className = 'legend';
     legend.textContent = SHORT_LEGEND[k.legend] ?? k.legend;
-    b.append(pip, legend, document.createElement('small'));
+    const hexEl = document.createElement('span');
+    hexEl.className = 'hex';
+    hexEl.hidden = true;
+    // the bottom strip: the actuation point, always shown
+    const act = document.createElement('span');
+    act.className = 'act-label';
+    b.append(fill, line, pip, dot, legend, hexEl, act);
     b.onclick = () => toggleKey(k.slot);
     $('#canvas').append(b);
     S.keyEls.push({ k, b });
@@ -911,15 +1027,45 @@ function isRemapped(s) {
   return S.layout.defaultRemap.some((row, l) => S.ed.remap[l][s] !== row[s]);
 }
 
-function valueText(s) {
-  if (S.section === 'actuation') return `${S.ed.actuation[s].toFixed(2)} mm`;
-  if (S.section === 'remap') return `0x${hex(S.ed.remap[S.layer][s])}`;
-  return '';
+// actText formats an actuation point for the key label: one decimal place, two on the 0.01 mm scale.
+function actText(v) {
+  return v.toFixed(P().unit_mm < 0.1 ? 2 : 1);
+}
+
+// depthState reads one key's live state from S.depth and the editor's actuation point. A key actuates when its
+// depth reaches the actuation point and releases only ACT_HYST below it, so it does not flicker at the threshold.
+function depthState(slot) {
+  const depth = S.depth[slot] ?? 0; // a key missing from the snapshot reads 0
+  const act = S.ed.actuation[slot];
+  const on = S.actuated.has(slot) ? depth >= act - ACT_HYST : depth >= act;
+  if (on) S.actuated.add(slot);
+  else S.actuated.delete(slot);
+  return { depth, act, on, pressed: depth > ACT_HYST };
+}
+
+// paintDepth draws one key's live overlay: the depth bar from the bottom, and the line at its actuation point.
+function paintDepth(b, st) {
+  const max = P().max;
+  const fill = b.querySelector('.depth-fill');
+  const line = b.querySelector('.act-line');
+  fill.hidden = false;
+  line.hidden = false;
+  fill.style.height = `${Math.min(100, (st.depth / max) * 100)}%`;
+  line.style.bottom = `calc(${Math.min(100, (st.act / max) * 100)}% - 1px)`;
+  b.dataset.act = st.on ? 'on' : 'up';
+}
+
+// clearDepth removes the live overlay and returns the key to its normal look.
+function clearDepth(b) {
+  b.querySelector('.depth-fill').hidden = true;
+  b.querySelector('.act-line').hidden = true;
+  delete b.dataset.act;
 }
 
 function paintKey({ k, b }) {
   const s = k.slot;
-  const depth = S.live ? S.depth[s] : undefined;
+  // In live mode every key shows its depth; a key with no value yet reads 0.00 mm.
+  const live = S.live ? depthState(s) : null;
   const remapped = isRemapped(s);
   const locked = !keyEditable(k);
   const why = locked ? (S.section === 'lighting' ? 'no LED' : 'not remappable') : '';
@@ -931,25 +1077,43 @@ function paintKey({ k, b }) {
   b.querySelector('.pip').hidden = !remapped;
   b.style.background = '';
   b.style.color = '';
-  if (depth !== undefined) {
-    const pct = Math.min(100, (depth / P().max) * 100);
-    b.style.background = `color-mix(in srgb, var(--accent) ${pct}%, var(--key))`;
-    if (pct >= 55) b.style.color = 'var(--accent-ink)';
-  } else if (S.section === 'lighting' && isLED(s)) {
-    const c = S.ed.lighting.colors[s];
-    b.style.background = c;
-    b.style.color = lum(c) > 0.5 ? '#000' : '#fff';
+  // the hex code is shown only on the remap section, when Show values is on
+  const hx = b.querySelector('.hex');
+  hx.hidden = !(S.showValues && S.section === 'remap' && !live);
+  hx.textContent = hx.hidden ? '' : `0x${hex(S.ed.remap[S.layer][s])}`;
+  if (live) {
+    paintDepth(b, live);
+  } else {
+    clearDepth(b);
+    if (S.section === 'lighting' && isLED(s) && !S.preview) {
+      // while the preview runs, its frame loop paints these keys instead
+      const c = S.ed.lighting.colors[s];
+      b.style.background = c;
+      b.style.color = lum(c) > 0.5 ? '#000' : '#fff';
+    }
   }
-  b.querySelector('small').textContent = depth !== undefined ? `${depth.toFixed(2)} mm` : S.showValues ? valueText(s) : '';
+  b.querySelector('.act-label').textContent = actText(S.ed.actuation[s]);
 }
 
 function paintBoard() {
   S.keyEls.forEach(paintKey);
 }
 
+function ledCount() {
+  return S.layout.keys.filter((k) => isLED(k.slot)).length;
+}
+
 function renderToolbar() {
   const n = selCount();
-  $('#selSum').textContent = n ? `${n} key${n === 1 ? '' : 's'} selected` : 'No keys selected: changes apply to all keys';
+  const none = S.section === 'lighting'
+    ? `No keys selected: paint and apply to all ${ledCount()} LED keys`
+    : 'No keys selected: changes apply to all keys';
+  const sum = $('#selSum');
+  sum.textContent = n ? `${n} key${n === 1 ? '' : 's'} selected` : 'No keys selected';
+  sum.dataset.none = String(!n);
+  $('#selClear').disabled = !n;
+  $('#selHint').textContent = none;
+  $('#selHint').hidden = !!n;
   $('#showVals').setAttribute('aria-pressed', String(S.showValues));
 }
 
@@ -962,6 +1126,7 @@ function renderSelection() {
   syncInspector();
   paintBoard();
   renderToolbar();
+  renderColour();
 }
 
 // toggleKey flips one key; ISO Enter's two halves always move together.
@@ -982,10 +1147,11 @@ function targets() {
 }
 
 function setSection(name) {
+  if (name !== 'lighting') stopPreview();
   S.section = name;
   document.querySelectorAll('[data-section]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.section === name)));
   for (const s of SECTIONS) $(`#p-${s}`).hidden = s !== name;
-  paintBoard();
+  renderSelection();
 }
 
 function setLayer(l) {
@@ -1015,7 +1181,8 @@ function syncInspector() {
   $('#rtFields').hidden = !ed.rapid_trigger;
   $('#turbo').checked = ed.turbo;
   $('#scale').value = ed.scale || 'auto';
-  $('#effect').value = ed.lighting.effect;
+  renderEffects();
+  syncLighting();
   setRange('#bright', ed.lighting.brightness);
   setRange('#speed', ed.lighting.speed);
   syncRemap();
@@ -1054,10 +1221,16 @@ function setActuation() {
   touch();
 }
 
+// ledTargets is the LED keys Paint selected will change: the selected ones, or all LED keys when none is selected.
+function ledTargets() {
+  const base = S.sel.size ? [...S.sel] : S.layout.keys.map((k) => k.slot);
+  return base.filter((s) => isLED(s));
+}
+
 function paintSelected() {
-  if (!S.sel.size) return toast('Select keys first.', 'error');
-  const col = $('#paint').value;
-  for (const s of S.sel) if (isLED(s)) S.ed.lighting.colors[s] = col;
+  const slots = ledTargets();
+  if (!slots.length) return toast('No selected key has an LED. Select LED keys or clear the selection.', 'error');
+  for (const s of slots) S.ed.lighting.colors[s] = S.colour;
   touch();
 }
 
@@ -1123,6 +1296,7 @@ async function startLive() {
   }
   S.live = true;
   renderLive();
+  renderReadout();
   pollLive();
 }
 
@@ -1131,8 +1305,10 @@ async function stopLive() {
   S.live = false;
   clearTimeout(S.liveTimer);
   S.depth = {};
+  S.actuated = new Set();
   renderLive();
   paintBoard();
+  renderReadout();
   try {
     await api('POST', '/api/live/stop');
   } catch (e) {
@@ -1152,6 +1328,7 @@ async function readDepth() {
     if (!S.live) return;
     S.depth = depth;
     paintBoard();
+    renderReadout();
   } catch (e) {
     toast(`Live view: ${e.message}`, 'error');
     return stopLive();
@@ -1165,8 +1342,42 @@ function renderLive() {
   btn.className = S.live ? 'btn' : 'btn primary';
   $('#liveText').textContent = !S.live
     ? 'Press keys to see how far they are pressed, shown in mm on the board.'
-    : S.inView ? 'Live view on. Keys shade darker the deeper they are pressed.' : 'Live view is paused while this panel is off screen.';
+    : S.inView ? 'Live view on. Bars rise with depth; a line marks each actuation point.' : 'Live view is paused while this panel is off screen.';
   $('#liveMax').textContent = `${P().max} mm`;
+}
+
+// renderReadout lists the keys pressed past ACT_HYST, deepest first, with their actuation point and state.
+function renderReadout() {
+  const list = $('#liveList');
+  list.hidden = !S.live;
+  if (!S.live) return list.replaceChildren();
+  const rows = S.layout.keys
+    .map((k) => ({ k, st: depthState(k.slot) }))
+    .filter(({ st }) => st.pressed)
+    .sort((a, b) => b.st.depth - a.st.depth);
+  if (!rows.length) {
+    const li = document.createElement('li');
+    li.className = 'rd-empty';
+    li.textContent = 'No keys pressed';
+    return list.replaceChildren(li);
+  }
+  const cell = (cls, text) => {
+    const span = document.createElement('span');
+    span.className = cls;
+    span.textContent = text;
+    return span;
+  };
+  list.replaceChildren(...rows.map(({ k, st }) => {
+    const li = document.createElement('li');
+    li.dataset.act = st.on ? 'on' : 'up';
+    li.append(
+      cell('rd-key', k.legend),
+      cell('rd-num', `${st.depth.toFixed(2)} mm`),
+      cell('rd-num', `${st.act.toFixed(2)} mm`),
+      cell('rd-state', st.on ? 'actuated' : 'not yet'),
+    );
+    return li;
+  }));
 }
 
 // ---- firmware ----
@@ -1218,39 +1429,231 @@ function applyTheme(theme) {
 // initTheme uses the saved choice, else follows the system setting.
 function initTheme() {
   const dark = matchMedia('(prefers-color-scheme: dark)');
-  applyTheme(localStorage.getItem(THEME_KEY) || (dark.matches ? 'dark' : 'light'));
+  applyTheme(storageGet(THEME_KEY) || (dark.matches ? 'dark' : 'light'));
   dark.addEventListener('change', (e) => {
-    if (!localStorage.getItem(THEME_KEY)) applyTheme(e.matches ? 'dark' : 'light');
+    if (!storageGet(THEME_KEY)) applyTheme(e.matches ? 'dark' : 'light');
   });
 }
 
-function buildEffects() {
-  const sel = $('#effect');
-  for (const kind of Object.keys(KIND_LABEL)) {
-    const g = document.createElement('optgroup');
-    g.label = KIND_LABEL[kind];
-    for (const e of S.layout.effects.filter((x) => x.kind === kind)) g.append(new Option(e.label, e.id));
-    sel.append(g);
-  }
+// renderEffects draws every effect as a card, grouped by kind. Kinds not in KIND_LABEL get their own raw heading.
+function renderEffects() {
+  const cur = S.ed.lighting.effect;
+  const kinds = [...new Set([...Object.keys(KIND_LABEL), ...S.layout.effects.map((e) => e.kind)])];
+  const groups = kinds.map((kind) => {
+    const list = S.layout.effects.filter((e) => e.kind === kind);
+    if (!list.length) return null;
+    const title = KIND_LABEL[kind] ?? kind;
+    const wrap = document.createElement('div');
+    wrap.className = 'col';
+    wrap.setAttribute('role', 'group');
+    wrap.setAttribute('aria-label', title);
+    const head = document.createElement('span');
+    head.className = 'field-label';
+    head.textContent = title;
+    const grid = document.createElement('div');
+    grid.className = 'fx-grid';
+    for (const e of list) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'fx';
+      b.textContent = e.label;
+      b.setAttribute('aria-pressed', String(e.id === cur));
+      b.onclick = () => setEffect(e.id);
+      grid.append(b);
+    }
+    wrap.append(head, grid);
+    return wrap;
+  }).filter(Boolean);
+  $('#effects').replaceChildren(...groups);
+}
+
+function setEffect(id) {
+  S.ed.lighting.effect = id;
+  touch();
+  renderEffects();
+  syncLighting();
+}
+
+// syncLighting shows the colour painter for Custom light, and the speed control for every other effect.
+function syncLighting() {
+  const kind = S.layout.effects.find((e) => e.id === S.ed.lighting.effect)?.kind;
+  $('#paintBox').hidden = kind !== 'custom';
+  $('#brightBox').hidden = kind === 'custom';
+  $('#speedBox').hidden = kind === 'custom';
 }
 
 function buildHid() {
   $('#hidSel').append(...HID_USAGES.map(([label, code]) => new Option(`${label} (0x${hex(code)})`, code)));
   const locked = S.layout.keys.filter((k) => S.layout.noRemap[k.slot]).map((k) => k.legend);
-  $('#lockedNote').textContent = `Locked, not remappable: ${locked.join(', ')}.`;
+  $('#lockedText').textContent = `Locked, not remappable: ${locked.join(', ')}.`;
 }
 
-function buildSwatches() {
-  for (const [name, color] of SWATCHES) {
+// loadPalette reads the saved palette; a missing or bad value falls back to the default swatches.
+function loadPalette() {
+  try {
+    const v = JSON.parse(storageGet(PALETTE_KEY));
+    if (Array.isArray(v)) {
+      const ok = v.filter((c) => typeof c === 'string' && /^#[0-9a-f]{6}$/i.test(c)).map((c) => c.toLowerCase());
+      const uniq = [...new Set(ok)].slice(0, PALETTE_MAX);
+      if (uniq.length) return uniq;
+    }
+  } catch (e) {
+    // unreadable storage: use the defaults
+  }
+  return [...DEFAULT_HEX];
+}
+
+// savePalette keeps the palette for next time. When storage is blocked it is not saved, and the palette still works until the page is closed.
+function savePalette() {
+  storageSet(PALETTE_KEY, JSON.stringify(S.palette));
+}
+
+// renderSwatches draws the palette. Only colours the user added get a remove button.
+function renderSwatches() {
+  const nodes = S.palette.map((c) => {
+    const name = SWATCHES.find(([, h]) => h === c)?.[0] ?? c.toUpperCase();
+    const wrap = document.createElement('div');
+    wrap.className = 'swatch-wrap';
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'swatch';
-    b.style.background = color;
+    b.dataset.c = c;
+    b.style.background = c;
     b.title = name;
     b.setAttribute('aria-label', `Use ${name}`);
-    b.onclick = () => { $('#paint').value = color; };
-    $('#swatches').append(b);
+    b.onclick = () => setColour(c);
+    wrap.append(b);
+    if (!DEFAULT_HEX.includes(c)) {
+      const x = document.createElement('button');
+      x.type = 'button';
+      x.className = 'swatch-x';
+      x.append(icon('x'));
+      x.title = `Remove ${c.toUpperCase()}`;
+      x.setAttribute('aria-label', `Remove colour ${c.toUpperCase()}`);
+      x.onclick = () => removeColour(c);
+      wrap.append(x);
+    }
+    return wrap;
+  });
+  $('#swatches').replaceChildren(...nodes);
+  renderColour();
+}
+
+function setColour(c) {
+  S.colour = c;
+  renderColour();
+}
+
+// renderColour shows the current colour, marks its swatch, and says what Paint selected will change.
+function renderColour() {
+  $('#paint').value = S.colour;
+  $('#curSw').style.background = S.colour;
+  document.querySelectorAll('#swatches .swatch').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.c === S.colour)));
+  const full = S.palette.length >= PALETTE_MAX;
+  $('#addColour').disabled = full || S.palette.includes(S.colour);
+  $('#addColour').title = full ? `The palette holds up to ${PALETTE_MAX} colours.` : '';
+  const slots = ledTargets();
+  const n = slots.filter((s) => s !== 76).length; // ISO Enter's two halves count as one key
+  const what = !slots.length
+    ? 'No selected key has an LED, so nothing will be painted.'
+    : S.sel.size
+      ? `Paint selected sets ${n} selected LED key${n === 1 ? '' : 's'} to ${S.colour.toUpperCase()}.`
+      : `Paint selected sets all ${n} LED keys to ${S.colour.toUpperCase()}, because no keys are selected.`;
+  $('#paintLine').textContent = what;
+}
+
+function addColour() {
+  const c = S.colour;
+  if (S.palette.includes(c)) return;
+  if (S.palette.length >= PALETTE_MAX) return toast(`The palette holds up to ${PALETTE_MAX} colours. Remove one first.`, 'error');
+  S.palette = [...S.palette, c];
+  savePalette();
+  renderSwatches();
+}
+
+function removeColour(c) {
+  S.palette = S.palette.filter((x) => x !== c);
+  savePalette();
+  renderSwatches();
+}
+
+// ---- preview: a local approximation of the lighting, never sent to the keyboard ----
+
+// hsvHex returns a #rrggbb colour for hue h (0 to 1), saturation s and value v (0 to 1).
+function hsvHex(h, s, v) {
+  const i = Math.floor(h * 6);
+  const f = h * 6 - i;
+  const p = v * (1 - s);
+  const q = v * (1 - f * s);
+  const t = v * (1 - (1 - f) * s);
+  const [r, g, b] = [[v, t, p], [q, v, p], [p, v, t], [p, q, v], [t, p, v], [v, p, q]][i % 6];
+  return '#' + [r, g, b].map((x) => hex(Math.round(x * 255))).join('');
+}
+
+// dim scales a #rrggbb colour by k (0 to 1).
+function dim(c, k) {
+  const n = parseInt(c.slice(1), 16);
+  return '#' + [16, 8, 0].map((sh) => hex(Math.round(((n >> sh) & 255) * k))).join('');
+}
+
+// previewColour gives one LED's colour at time t. Effects are matched by id; unknown ones get a moving wave.
+function previewColour(slot, t) {
+  const { effect, brightness } = S.ed.lighting;
+  const kind = S.layout.effects.find((e) => e.id === effect)?.kind;
+  const k = brightness / 9;
+  const base = S.colour;
+  const p = S.pos.get(slot) ?? { x: 0, y: 0 };
+  if (kind === 'off') return '#000000';
+  if (kind === 'custom') return dim(S.ed.lighting.colors[slot] ?? '#000000', k);
+  if (effect === 'always') return dim(base, k);
+  if (effect === 'breath') return dim(base, k * (0.5 + 0.5 * Math.sin(TAU * t)));
+  if (/spectrum|rainbow|rotate/.test(effect)) return hsvHex(((t * 0.1 + p.x) % 1 + 1) % 1, 1, k);
+  if (/ripple|fountain/.test(effect)) {
+    const d = Math.hypot(p.x - 0.5, p.y - (effect.includes('fountain') ? 1 : 0.5));
+    return dim(base, k * (0.5 + 0.5 * Math.sin(TAU * (d * 2 - t))));
   }
+  if (/star/.test(effect)) return dim(base, k * Math.max(0, Math.sin(slot * 7.3 + t * 3)) ** 6);
+  return dim(base, k * (0.5 + 0.5 * Math.sin(TAU * (p.x - t * 0.5))));
+}
+
+function previewFrame(now) {
+  if (!S.preview) return;
+  // speed scales the rate; the live depth view takes the board while it runs
+  const t = ((now - S.previewT0) / 1000) * (0.3 + S.ed.lighting.speed * 0.2);
+  if (!S.live) {
+    for (const { k, b } of S.keyEls) {
+      if (!isLED(k.slot)) continue;
+      const c = previewColour(k.slot, t);
+      b.style.background = c;
+      b.style.color = lum(c) > 0.5 ? '#000' : '#fff';
+    }
+  }
+  S.previewRaf = requestAnimationFrame(previewFrame);
+}
+
+function startPreview() {
+  if (S.preview) return;
+  S.preview = true;
+  S.previewT0 = performance.now();
+  $('#previewBtn').setAttribute('aria-pressed', 'true');
+  $('#previewIcon').setAttribute('href', '#i-pause');
+  S.previewRaf = requestAnimationFrame(previewFrame);
+}
+
+function stopPreview() {
+  if (!S.preview) return;
+  S.preview = false;
+  cancelAnimationFrame(S.previewRaf);
+  $('#previewBtn').setAttribute('aria-pressed', 'false');
+  $('#previewIcon').setAttribute('href', '#i-play');
+  paintBoard();
+}
+
+// boardPositions gives each slot a centre in 0 to 1 across and down the board, for the preview.
+function boardPositions() {
+  const cols = Math.max(...S.layout.keys.map((k) => k.x + k.w));
+  const rows = Math.max(...S.layout.keys.map((k) => k.y)) + 1;
+  S.pos = new Map(S.layout.keys.map((k) => [k.slot, { x: (k.x + k.w / 2) / cols, y: (k.y + 0.5) / rows }]));
 }
 
 function bindRange(id, key) {
@@ -1262,10 +1665,9 @@ function bindRange(id, key) {
 }
 
 function bindEvents() {
-  $('#themeBtn').onclick = () => applyTheme(S.theme === 'dark' ? 'light' : 'dark');
   $('#themeBtn').onclick = () => {
     const next = S.theme === 'dark' ? 'light' : 'dark';
-    localStorage.setItem(THEME_KEY, next);
+    storageSet(THEME_KEY, next); // the theme still toggles when storage is blocked
     applyTheme(next);
   };
   $('#redetect').onclick = async () => {
@@ -1292,7 +1694,7 @@ function bindEvents() {
   $('#pSave').onclick = saveProfile;
   $('#pname').onkeydown = (e) => { if (e.key === 'Enter' && !$('#pSave').disabled) saveProfile(); };
 
-  $('#selAll').onclick = () => setSel(new Set(S.layout.keys.map((k) => k.slot)));
+  $('#selAll').onclick = () => setSel(new Set(S.layout.keys.filter((k) => keyEditable(k)).map((k) => k.slot)));
   $('#selClear').onclick = () => setSel(new Set());
   $('#showVals').onclick = () => {
     S.showValues = !S.showValues;
@@ -1314,10 +1716,12 @@ function bindEvents() {
   $('#turbo').onchange = (e) => { S.ed.turbo = e.target.checked; touch(); };
   $('#scale').onchange = (e) => { S.ed.scale = e.target.value; touch(); };
 
-  $('#effect').onchange = (e) => { S.ed.lighting.effect = e.target.value; touch(); };
   bindRange('#bright', 'brightness');
   bindRange('#speed', 'speed');
+  $('#paint').oninput = (e) => setColour(e.target.value);
+  $('#addColour').onclick = addColour;
   $('#paintBtn').onclick = paintSelected;
+  $('#previewBtn').onclick = () => (S.preview ? stopPreview() : startPreview());
   $('#applyLight').onclick = () => sendAndReport('Lighting', '/api/lighting', S.ed.lighting);
 
   $('#hidSel').onchange = (e) => setHidValue(Number(e.target.value));
@@ -1331,7 +1735,11 @@ function bindEvents() {
   $('#applyRemap').onclick = () => sendAndReport('Remap', '/api/remap', S.ed.remap);
 
   $('#liveBtn').onclick = () => (S.live ? stopLive() : startLive());
-  document.addEventListener('visibilitychange', () => { if (document.hidden) stopLive(); });
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) return;
+    stopLive();
+    stopPreview();
+  });
   window.addEventListener('pagehide', () => {
     if (S.live) fetch('/api/live/stop', { method: 'POST', keepalive: true, headers: { 'X-DeerKB': '1' } });
   });
@@ -1361,11 +1769,12 @@ function renderAll() {
 async function init() {
   initTheme();
   S.layout = await api('GET', '/api/layout');
+  boardPositions();
   buildBoard();
   new ResizeObserver(layoutBoard).observe($('.board-wrap'));
-  buildEffects();
   buildHid();
-  buildSwatches();
+  S.palette = loadPalette();
+  renderSwatches();
   bindEvents();
   loadEditor(blank(), null);
   setSection(S.section);

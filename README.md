@@ -1,24 +1,22 @@
 # DeerKB
 
-DeerKB is an offline replacement for the DrunkDeer web driver, for the **DrunkDeer A75 ISO** keyboard. It runs on Windows only. It talks to the keyboard over USB HID and serves its UI on your own machine, so no account or internet connection is needed to edit or apply settings.
+DeerKB is an offline replacement for the DrunkDeer web driver, for the **DrunkDeer A75 ISO** keyboard. It runs on Windows only. It talks to the keyboard over USB HID and runs its UI in its own window. DeerKB opens no network port and makes no network connections, so no account or internet connection is needed to edit or apply settings.
 
 > **Verify on your own A75 first.** Real-keyboard writes, the ISO key positions and the lighting frame have not yet been checked on hardware. Before you trust DeerKB with your layout, compare what it applies with what the official driver shows, and keep the official driver installed as a fallback. See `deerkb\NOT-YET-SUPPORTED.md` for the full list.
 
 ## Running
 
 1. Unzip `DeerKB-<version>.zip` anywhere.
-2. Double-click `DeerKB.exe`. It opens an app window on `http://127.0.0.1:7842/`. If Edge or Chrome is installed, the window is an app window; otherwise it opens in your default browser.
-3. If DeerKB is already running, a second launch just shows the existing window.
+2. Double-click `DeerKB.exe`. It opens in its own window, which needs the Microsoft Edge WebView2 Runtime (included with Windows 10 and 11).
+3. If DeerKB is already running, a second launch shows a message and does nothing else.
 
 Options:
 
 | Flag | Meaning |
 |---|---|
 | `--simulate` | Use a simulated A75 ISO instead of a real keyboard. Nothing is sent to USB. Good for trying the UI. |
-| `--no-window` | Serve the UI without opening a window. Open the printed URL yourself. |
-| `--port 7842` | Change the local port. |
 
-Close DeerKB from the app (Quit) or press Ctrl+C in a console started with `--no-window`.
+Close DeerKB from the app (Quit).
 
 ## Where data lives
 

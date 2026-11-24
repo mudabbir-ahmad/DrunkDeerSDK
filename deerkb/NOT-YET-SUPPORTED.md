@@ -24,6 +24,9 @@ Status key: ❌ not built · ⚠️ built but unverified on hardware · 🔎 whe
 | A75 Ultra / Master / X60 high-precision (`0xFD`) writes | ⚠️/❌ | Detected and shown; writes only if time allowed (see README). 🔎 SDK `capabilities/high_precision/*.yaml`. |
 | Logo / side light zones | n/a | Not on A75 ISO. |
 
+## Lighting
+- Speed mapping: 0 is slowest and maps to firmware 9; the firmware direction is not confirmed on hardware.
+
 ## App-level
 | Feature | Notes |
 |---|---|
