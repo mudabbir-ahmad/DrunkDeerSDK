@@ -302,6 +302,10 @@ func (l *hidLink) read(timeout time.Duration) ([]byte, error) {
 		return nil, err
 	}
 	if n != 64 || buf[0] != reportID {
+		// Dropped frames never reach the callers' matchers, so log them to see what the board sent.
+		if l.logf != nil && n > 0 {
+			l.logf("HID RX dropped (%d bytes) %x", n, buf[:n])
+		}
 		return nil, nil
 	}
 	if l.logf != nil {

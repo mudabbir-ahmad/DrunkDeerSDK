@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"reflect"
 	"testing"
+	"time"
 )
 
 func TestFindEffect(t *testing.T) {
@@ -195,5 +196,67 @@ func TestLightBaseJSONDefault(t *testing.T) {
 	}
 	if zero.Base != 0 {
 		t.Errorf("explicit base 0: got %d, want 0", zero.Base)
+	}
+}
+
+// SDK RgbAcknowledge: header [0xAE], Matches is buf[0] == 0xAE. The link strips the report id, so a reply is 63 bytes.
+func TestLightAckMatchesSDKReply(t *testing.T) {
+	ack := make([]byte, frameLen)
+	ack[0] = 0xAE
+	if !isLightAck(ack) {
+		t.Error("RgbAcknowledge [AE ...]: not matched")
+	}
+	for _, f := range [][]byte{
+		padFrame(0xB5, 0xAE),
+		padFrame(0xB6, 0x03, 0xAE),
+		padFrame(0x00, 0xAE),
+	} {
+		if isLightAck(f) {
+			t.Errorf("frame %x matched as an RGB ack", f[:4])
+		}
+	}
+}
+
+// fakeLink answers each written frame with the replies from respond; read returns them in order.
+type fakeLink struct {
+	respond func(frame []byte) [][]byte
+	queue   [][]byte
+}
+
+func (l *fakeLink) write(frame []byte) error {
+	l.queue = append(l.queue, l.respond(frame)...)
+	return nil
+}
+
+func (l *fakeLink) read(timeout time.Duration) ([]byte, error) {
+	if len(l.queue) == 0 {
+		time.Sleep(time.Millisecond)
+		return nil, nil
+	}
+	f := l.queue[0]
+	l.queue = l.queue[1:]
+	return f, nil
+}
+
+func (l *fakeLink) close() {}
+
+// An 0xAE reply after an unrelated frame is matched; an RGB packet with no reply is not acked.
+func TestSendLockedLightingAck(t *testing.T) {
+	reply := make([]byte, frameLen)
+	reply[0] = 0xAE
+	frame := padFrame(cmdLight, 0x01, 0x00, 0x00, 0x0A, 0x06, 0x09, 0xFF)
+
+	k := &Keyboard{link: &fakeLink{respond: func([]byte) [][]byte {
+		return [][]byte{padFrame(cmdKeyPoint, subTracking, 0x00), reply}
+	}}}
+	ok, err := k.sendLocked(frame, isLightAck)
+	if err != nil || !ok {
+		t.Errorf("reply after unrelated frame: ok %t, err %v, want acked", ok, err)
+	}
+
+	k = &Keyboard{link: &fakeLink{respond: func([]byte) [][]byte { return nil }}}
+	ok, err = k.sendLocked(frame, isLightAck)
+	if err != nil || ok {
+		t.Errorf("no reply: ok %t, err %v, want not acked and no error", ok, err)
 	}
 }

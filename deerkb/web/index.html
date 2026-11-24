@@ -142,6 +142,7 @@ input[type="color"] { width: 40px; height: 32px; padding: 0; border: 1px solid v
 .swatch-x .ic { width: 10px; height: 10px; }
 .cur { flex: none; width: 32px; height: 32px; border: 1px solid var(--bd-strong); border-radius: 8px; }
 .tint-sw { flex: none; width: 18px; height: 18px; border: 1px solid var(--bd-strong); border-radius: 6px; }
+#pickBox .field { flex: 1 1 120px; }
 .fx-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
 .fx { min-height: 32px; padding: 6px 10px; border: 1px solid var(--bd-strong); border-radius: 8px; background: var(--raised); color: var(--fg); text-align: left; overflow-wrap: anywhere; }
 .fx:hover:not(:disabled) { background: var(--hover); }
@@ -404,6 +405,15 @@ dialog p { margin: 0 0 16px; color: var(--mut); }
         <span class="field-label">Effect</span>
         <div id="effects" class="col"></div>
       </div>
+      <div class="col" id="pickBox" hidden>
+        <div class="row">
+          <label class="field">Custom colour<input id="customPick" type="color" value="#ffffff"></label>
+          <label class="field">Hex<input id="customHex" class="input" type="text" maxlength="7" placeholder="#rrggbb" autocomplete="off" spellcheck="false" aria-describedby="customErr"></label>
+        </div>
+        <p class="err" id="customErr" role="alert" hidden></p>
+        <div class="row"><button type="button" class="btn" id="addColour"><svg class="ic" aria-hidden="true"><use href="#i-plus"></use></svg>Add to palette</button></div>
+        <p class="note">Choosing a colour sets the tint for animated effects and the paint colour for Custom light.</p>
+      </div>
       <div class="col" id="tintBox" hidden>
         <span class="field-label" id="tintLabel">Colour</span>
         <div class="row">
@@ -427,8 +437,8 @@ dialog p { margin: 0 0 16px; color: var(--mut); }
         <p class="note">Speed is sent as the firmware value; its direction is not yet confirmed on hardware.</p>
       </div>
       <div class="col">
-        <div class="row"><button type="button" class="btn" id="previewBtn" aria-pressed="false"><svg class="ic" aria-hidden="true"><use id="previewIcon" href="#i-play"></use></svg>Preview</button></div>
-        <p class="note">Preview: approximate, not the keyboard's exact animation</p>
+        <div class="row"><button type="button" class="btn" id="previewBtn" aria-pressed="true"><svg class="ic" aria-hidden="true"><use id="previewIcon" href="#i-pause"></use></svg><span id="previewLabel">Pause</span></button></div>
+        <p class="note" id="previewCap"></p>
       </div>
       <div class="col" id="paintBox">
         <span class="field-label" id="swLabel">Colour</span>
@@ -437,7 +447,6 @@ dialog p { margin: 0 0 16px; color: var(--mut); }
           <label class="field">Current colour<input id="paint" type="color"></label>
         </div>
         <div class="swatches" id="swatches" role="group" aria-labelledby="swLabel"></div>
-        <div class="row"><button type="button" class="btn" id="addColour"><svg class="ic" aria-hidden="true"><use href="#i-plus"></use></svg>Add colour</button></div>
         <div class="row"><button type="button" class="btn" id="paintBtn">Paint selected</button></div>
         <p class="note" id="paintLine" aria-live="polite"></p>
         <p class="note">Per-key colours are used only by Custom light. Only keys with an LED can be painted.</p>
@@ -542,7 +551,8 @@ const S = {
   actuated: new Set(), // slots that have actuated, kept across polls for the hysteresis in depthState
   palette: [], colour: DEFAULT_COLOUR, // palette is the swatch list; colour is the current paint colour
   pos: new Map(), // slot to normalised board position, for the preview
-  preview: false, previewRaf: 0, previewT0: 0,
+  asp: 1, edge: new Set(), path: new Map(), // board width in board-height units; outer keys; key order for Snake
+  preview: false, previewWanted: true, previewRaf: 0, previewT0: 0, // previewWanted is the Play/Pause choice
   fwBefore: null,
   theme: 'dark',
 };
@@ -1120,7 +1130,8 @@ function clearDepth(b) {
   delete b.dataset.act;
 }
 
-function paintKey({ k, b }) {
+function paintKey(e) {
+  const { k, b } = e;
   const s = k.slot;
   // In live mode every key shows its depth; a key with no value yet reads 0.00 mm.
   const live = S.live ? depthState(s) : null;
@@ -1135,6 +1146,7 @@ function paintKey({ k, b }) {
   b.querySelector('.pip').hidden = !remapped;
   b.style.background = '';
   b.style.color = '';
+  e.drawn = ''; // the preview frame must paint this key again
   // the hex code is shown only on the remap section, when Show values is on
   const hx = b.querySelector('.hex');
   hx.hidden = !(S.showValues && S.section === 'remap' && !live);
@@ -1205,8 +1217,14 @@ function targets() {
 }
 
 function setSection(name) {
-  if (name !== 'lighting') stopPreview();
   S.section = name;
+  // the Lighting tab runs the preview by default; any other tab stops it
+  if (name === 'lighting') {
+    S.previewWanted = true;
+    startPreview();
+  } else {
+    stopPreview();
+  }
   document.querySelectorAll('[data-section]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.section === name)));
   for (const s of SECTIONS) $(`#p-${s}`).hidden = s !== name;
   renderSelection();
@@ -1560,7 +1578,9 @@ function syncLighting() {
   const kind = S.layout.effects.find((e) => e.id === S.ed.lighting.effect)?.kind;
   $('#paintBox').hidden = kind !== 'custom';
   $('#tintBox').hidden = kind !== 'mode';
+  $('#pickBox').hidden = kind !== 'mode' && kind !== 'custom';
   renderTint();
+  renderPreview();
   $('#brightBox').hidden = kind === 'custom';
   $('#speedBox').hidden = kind === 'custom';
 }
@@ -1631,6 +1651,8 @@ function setColour(c) {
 // renderColour shows the current colour, marks its swatch, and says what Paint selected will change.
 function renderColour() {
   $('#paint').value = S.colour;
+  $('#customPick').value = S.colour;
+  if (document.activeElement !== $('#customHex')) $('#customHex').value = S.colour;
   $('#curSw').style.background = S.colour;
   document.querySelectorAll('#swatches .swatch').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.c === S.colour)));
   const full = S.palette.length >= PALETTE_MAX;
@@ -1666,6 +1688,19 @@ function setTint(c) {
   S.ed.lighting.tint = c;
   touch();
   renderTint();
+}
+
+// setCustom takes a colour from the custom picker or the hex field. It is the paint colour for Custom light and the
+// tint for animated effects.
+function setCustom(c) {
+  setColour(c);
+  setTint(c);
+}
+
+// parseHex reads #rrggbb (the # is optional, any case). It returns the colour as #rrggbb, or '' when the text is not one.
+function parseHex(text) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(text.trim());
+  return m ? `#${m[1].toLowerCase()}` : '';
 }
 
 // renderTint draws the Colour row for animated effects: Firmware colours, the palette, and the chosen tint.
@@ -1712,65 +1747,179 @@ function dim(c, k) {
   return '#' + [16, 8, 0].map((sh) => hex(Math.round(((n >> sh) & 255) * k))).join('');
 }
 
-// previewColour gives one LED's colour at time t. Effects are matched by id; unknown ones get a moving wave.
-function previewColour(slot, t) {
-  const { effect, brightness } = S.ed.lighting;
-  const kind = S.layout.effects.find((e) => e.id === effect)?.kind;
-  const k = brightness / 9;
-  const base = S.colour;
-  const p = S.pos.get(slot) ?? { x: 0, y: 0 };
-  if (kind === 'off') return '#000000';
-  if (kind === 'custom') return dim(S.ed.lighting.colors[slot] ?? '#000000', k);
-  if (kind === 'mode' && S.ed.lighting.tint) return dim(S.ed.lighting.tint, k); // the tint is sent as one colour on every key
-  if (effect === 'always') return dim(base, k);
-  if (effect === 'breath') return dim(base, k * (0.5 + 0.5 * Math.sin(TAU * t)));
-  if (/spectrum|rainbow|rotate/.test(effect)) return hsvHex(((t * 0.1 + p.x) % 1 + 1) % 1, 1, k);
-  if (/ripple|fountain/.test(effect)) {
-    const d = Math.hypot(p.x - 0.5, p.y - (effect.includes('fountain') ? 1 : 0.5));
-    return dim(base, k * (0.5 + 0.5 * Math.sin(TAU * (d * 2 - t))));
-  }
-  if (/star/.test(effect)) return dim(base, k * Math.max(0, Math.sin(slot * 7.3 + t * 3)) ** 6);
-  return dim(base, k * (0.5 + 0.5 * Math.sin(TAU * (p.x - t * 0.5))));
+// PREVIEW_NOTE is the label under the preview. The simulation is drawn here only; nothing is sent to the keyboard.
+const PREVIEW_NOTE = 'Simulation of the effect on the keyboard. Exact firmware animation timing may differ.';
+
+// hash01 gives a fixed pseudo-random value in [0, 1) for an integer n. It is an integer hash, so each key's
+// random-looking pattern is the same on every run and every frame.
+function hash01(n) {
+  let x = Math.imul(n ^ 0x9e3779b9, 0x85ebca6b);
+  x = Math.imul(x ^ (x >>> 13), 0xc2b2ae35);
+  x ^= x >>> 16;
+  return (x >>> 0) / 4294967296;
 }
 
+// fract is the part of x after the decimal point, in [0, 1).
+const fract = (x) => x - Math.floor(x);
+
+// front is a band that travels as shift grows. It is brightest at the point p = shift and fades behind it over width.
+function front(p, shift, width) {
+  const f = fract(shift - p);
+  return f < width ? 1 - f / width : 0;
+}
+
+// previewMode gives one mode effect's brightness (0 to 1) and hue (0 to 1) for a key at time T, in cycles.
+// ix and iy are in board-height units, so rings and bursts look round on the wide board.
+function previewMode(id, slot, p, T) {
+  const ix = p.x * S.asp;
+  const iy = p.y;
+  const rainbow = fract(p.x * 0.8 + T * 0.1); // the firmware-style rainbow: across the board, and moving
+  const slow = fract(T * 0.05);
+  switch (id) {
+    case 'rotate': {
+      if (!S.edge.has(slot)) return [0, rainbow];
+      const a = fract(Math.atan2(iy - 0.5, ix - S.asp / 2) / TAU + 0.5); // angle round the board centre
+      return [front(a, T * 0.5, 0.2), rainbow];
+    }
+    case 'always': return [1, slow];
+    case 'spectrum': return [1, rainbow];
+    case 'breath': return [0.5 + 0.5 * Math.sin(TAU * T * 0.5), slow];
+    case 'press': {
+      const g = T * 1.2 + hash01(slot * 7 + 1) * 8; // each key has its own random glow times
+      const on = hash01(slot * 131 + Math.floor(g)) < 0.12;
+      return [on ? 1 - fract(g) : 0, rainbow];
+    }
+    case 'stars': {
+      const tw = 0.5 + 0.5 * Math.sin(TAU * (T * (0.5 + hash01(slot * 3 + 2)) + hash01(slot * 5 + 1)));
+      return [tw ** 4, hash01(slot * 9 + 4)];
+    }
+    case 'wave': return [0.5 + 0.5 * Math.sin(TAU * (p.x * 1.5 - T * 0.4)), rainbow];
+    case 'center': return [front(Math.hypot(ix - S.asp / 2, iy - 0.5), T * 0.5, 0.3), rainbow];
+    case 'surfdown': return [front(iy, T * 0.5, 0.3), rainbow];
+    case 'ripple': {
+      let best = 0;
+      for (let i = 0; i < 3; i++) {
+        const g = T * 0.35 + i / 3;
+        const c = Math.floor(g); // each ring starts from a new random centre
+        const age = fract(g);
+        const cx = hash01(c * 31 + i * 7 + 1) * S.asp;
+        const cy = hash01(c * 31 + i * 7 + 9);
+        const d = Math.hypot(ix - cx, iy - cy);
+        best = Math.max(best, (1 - age) * Math.max(0, 1 - Math.abs(d - age * 0.9) / 0.08));
+      }
+      return [best, rainbow];
+    }
+    case 'fish': {
+      let best = 0;
+      for (let f = 0; f < 3; f++) {
+        const fx = fract(hash01(f * 11 + 3) + T * 0.15 * (0.5 + hash01(f * 11 + 5))) * S.asp;
+        const fy = 0.2 + 0.6 * hash01(f * 11 + 7);
+        best = Math.max(best, Math.max(0, 1 - Math.hypot(ix - fx, iy - fy) / 0.3));
+      }
+      return [best, rainbow];
+    }
+    case 'fountain': return [front(1 - iy, T * 0.5 + hash01(Math.floor(p.x * 8) * 5 + 2), 0.25), rainbow];
+    case 'traffic': {
+      const band = Math.floor(p.x * 4);
+      const phase = Math.floor(T * 0.5) % 3;
+      return [1, [0, 0.12, 0.33][(band + phase) % 3]]; // red, amber, green
+    }
+    case 'snake': {
+      const d = fract(fract(T * 0.2) - (S.path.get(slot) ?? 0) / S.path.size);
+      return [d < 0.12 ? 1 - d / 0.12 : 0, rainbow];
+    }
+    case 'repeat': return [front(p.x * 3, T * 0.6, 0.4), rainbow];
+    case 'cross': return [Math.max(front(p.x, T * 0.4, 0.2), front(p.y, -T * 0.4, 0.2)), rainbow];
+    case 'laser': return [Math.max(0, 1 - Math.abs(p.x - fract(T * 0.8)) / 0.06), 0.5];
+    case 'randfountain': {
+      let best = 0;
+      let hue = rainbow;
+      for (let i = 0; i < 3; i++) {
+        const g = T * 0.6 + i / 3;
+        const c = Math.floor(g);
+        const age = fract(g);
+        const cx = hash01(c * 37 + i * 3 + 2) * S.asp;
+        const cy = hash01(c * 37 + i * 3 + 6);
+        const v = Math.hypot(ix - cx, iy - cy) < age * 0.7 ? 1 - age : 0;
+        if (v > best) {
+          best = v;
+          hue = hash01(c * 53 + i * 9 + 1); // each burst has its own colour
+        }
+      }
+      return [best, hue];
+    }
+    default: return [0.5 + 0.5 * Math.sin(TAU * (p.x - T * 0.5)), rainbow]; // unknown ids get a moving wave
+  }
+}
+
+// previewColour gives one LED's colour at time T. Custom uses the per-key colours exactly. The other effects use their
+// own shape, scaled by brightness. On a mode effect the tint replaces the hue; with no tint the rainbow is used.
+function previewColour(slot, T) {
+  const { effect, brightness } = S.ed.lighting;
+  const kind = S.layout.effects.find((e) => e.id === effect)?.kind;
+  if (kind === 'off') return '#000000';
+  if (kind === 'custom') return S.ed.lighting.colors[slot] ?? '#000000';
+  const [level, hue] = previewMode(effect, slot, S.pos.get(slot) ?? { x: 0, y: 0 }, T);
+  return dim(S.ed.lighting.tint || hsvHex(hue, 1, 1), (brightness / 9) * level);
+}
+
+// previewFrame runs once per animation frame while the preview is on. It writes only the LED keys' colours, and only
+// where a colour has changed. The live depth view takes the board while it runs.
 function previewFrame(now) {
   if (!S.preview) return;
-  // speed scales the rate; the live depth view takes the board while it runs
-  const t = ((now - S.previewT0) / 1000) * (0.3 + S.ed.lighting.speed * 0.2);
   if (!S.live) {
-    for (const { k, b } of S.keyEls) {
-      if (!isLED(k.slot)) continue;
-      const c = previewColour(k.slot, t);
-      b.style.background = c;
-      b.style.color = lum(c) > 0.5 ? '#000' : '#fff';
+    const T = ((now - S.previewT0) / 1000) * (0.3 + S.ed.lighting.speed * 0.2); // speed 0 is slowest, 9 fastest
+    for (const e of S.keyEls) {
+      if (!isLED(e.k.slot)) continue;
+      const c = previewColour(e.k.slot, T);
+      if (c === e.drawn) continue;
+      e.drawn = c;
+      e.b.style.background = c;
+      e.b.style.color = lum(c) > 0.5 ? '#000' : '#fff';
     }
   }
   S.previewRaf = requestAnimationFrame(previewFrame);
 }
 
+// renderPreview shows the effect's name with the honest label, and the Play or Pause button.
+function renderPreview() {
+  const on = S.preview;
+  const eff = S.layout.effects.find((e) => e.id === S.ed.lighting.effect);
+  $('#previewIcon').setAttribute('href', on ? '#i-pause' : '#i-play');
+  $('#previewLabel').textContent = on ? 'Pause' : 'Play';
+  $('#previewBtn').setAttribute('aria-pressed', String(on));
+  $('#previewCap').textContent = `${eff ? eff.label : 'Effect'}${on ? '' : ' (paused)'}. ${PREVIEW_NOTE}`;
+}
+
+// startPreview runs the preview while the Lighting tab is open and the page is visible.
 function startPreview() {
-  if (S.preview) return;
+  if (S.preview || document.hidden || S.section !== 'lighting') return;
   S.preview = true;
   S.previewT0 = performance.now();
-  $('#previewBtn').setAttribute('aria-pressed', 'true');
-  $('#previewIcon').setAttribute('href', '#i-pause');
+  renderPreview();
   S.previewRaf = requestAnimationFrame(previewFrame);
 }
 
+// stopPreview stops the loop and returns the board to the editor's colours. previewWanted is kept, so the preview
+// comes back when the page is shown again on the Lighting tab.
 function stopPreview() {
   if (!S.preview) return;
   S.preview = false;
   cancelAnimationFrame(S.previewRaf);
-  $('#previewBtn').setAttribute('aria-pressed', 'false');
-  $('#previewIcon').setAttribute('href', '#i-play');
+  renderPreview();
   paintBoard();
 }
 
-// boardPositions gives each slot a centre in 0 to 1 across and down the board, for the preview.
+// boardPositions gives each slot a centre in 0 to 1 across and down the board, for the preview. It also records the
+// board's width in board-height units (S.asp), the outer keys (for Rotate) and the key order (for Snake).
 function boardPositions() {
   const cols = Math.max(...S.layout.keys.map((k) => k.x + k.w));
   const rows = Math.max(...S.layout.keys.map((k) => k.y)) + 1;
+  S.asp = cols / rows;
   S.pos = new Map(S.layout.keys.map((k) => [k.slot, { x: (k.x + k.w / 2) / cols, y: (k.y + 0.5) / rows }]));
+  S.edge = new Set(S.layout.keys.filter((k) => k.y === 0 || k.y === rows - 1 || k.x === 0 || k.x + k.w === cols).map((k) => k.slot));
+  const order = [...S.layout.keys].sort((a, b) => a.y - b.y || (a.y % 2 ? b.x - a.x : a.x - b.x)); // rows run in turn
+  S.path = new Map(order.map((k, i) => [k.slot, i]));
 }
 
 function bindRange(id, key) {
@@ -1836,10 +1985,26 @@ function bindEvents() {
   bindRange('#bright', 'brightness');
   bindRange('#speed', 'speed');
   $('#tintFw').onclick = () => setTint('');
+  $('#customPick').oninput = (e) => setCustom(e.target.value);
+  $('#customHex').oninput = (e) => {
+    const c = parseHex(e.target.value);
+    $('#customErr').hidden = true;
+    if (c) setCustom(c);
+  };
+  $('#customHex').onchange = (e) => {
+    if (parseHex(e.target.value)) return;
+    $('#customErr').textContent = 'Use a colour as #rrggbb, for example #ff7a1a.';
+    $('#customErr').hidden = false;
+    e.target.value = S.colour;
+  };
   $('#paint').oninput = (e) => setColour(e.target.value);
   $('#addColour').onclick = addColour;
   $('#paintBtn').onclick = paintSelected;
-  $('#previewBtn').onclick = () => (S.preview ? stopPreview() : startPreview());
+  $('#previewBtn').onclick = () => {
+    S.previewWanted = !S.preview;
+    if (S.preview) stopPreview();
+    else startPreview();
+  };
   $('#applyLight').onclick = () => sendAndReport('Lighting', '/api/lighting', S.ed.lighting);
 
   $('#hidSel').onchange = (e) => setHidValue(Number(e.target.value));
@@ -1854,7 +2019,10 @@ function bindEvents() {
 
   $('#liveBtn').onclick = () => (S.live ? stopLive() : startLive());
   document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) return;
+    if (!document.hidden) {
+      if (S.previewWanted) startPreview(); // startPreview itself checks the Lighting tab
+      return;
+    }
     stopLive();
     stopPreview();
   });

@@ -206,10 +206,13 @@ func (k *Keyboard) ApplyLighting(ls LightSettings) (Step, error) {
 	resume := k.pauseLocked()
 	defer resume()
 	acked := true
-	for _, f := range frames {
+	for i, f := range frames {
 		ok, err := k.sendLocked(f, isLightAck)
 		if err != nil {
 			return Step{Name: "Lighting", Warn: err.Error()}, err
+		}
+		if !ok && k.logf != nil {
+			k.logf("Lighting: packet %d of %d: no 0xAE ack within %v", i+1, len(frames), ackTimeout)
 		}
 		acked = acked && ok
 	}
