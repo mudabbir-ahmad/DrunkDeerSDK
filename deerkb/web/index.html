@@ -59,7 +59,7 @@ button:disabled, input:disabled, select:disabled { cursor: not-allowed; opacity:
 .dot[data-tone="ok"] { background: var(--ok); }
 .dot[data-tone="info"] { background: var(--info); }
 .dot[data-tone="bad"] { background: var(--bad); }
-.main { display: grid; grid-template-columns: 280px minmax(0, 1fr) 340px; grid-template-rows: minmax(0, 1fr); gap: 16px; min-height: 0; padding: 16px; overflow: hidden; }
+.main { display: grid; grid-template-columns: 280px minmax(0, 1fr) 340px; grid-template-rows: minmax(0, 1fr); gap: 16px; min-height: 0; padding: 16px; overflow: hidden; width: 100%; max-width: 1880px; margin: 0 auto; }
 .pane { display: flex; flex-direction: column; gap: 8px; min-width: 0; min-height: 0; overflow: auto; }
 .pane > .card { flex: none; }
 .side { grid-column: 1; }
@@ -137,6 +137,7 @@ input[type="color"] { width: 40px; height: 36px; padding: 0; border: 1px solid v
 .swatch-x:hover { background: var(--hover); }
 .swatch-x .ic { width: 10px; height: 10px; }
 .cur { flex: none; width: 36px; height: 36px; border: 1px solid var(--bd-strong); border-radius: 8px; }
+.tint-sw { flex: none; width: 18px; height: 18px; border: 1px solid var(--bd-strong); border-radius: 6px; }
 .fx-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
 .fx { min-height: 36px; padding: 6px 10px; border: 1px solid var(--bd-strong); border-radius: 8px; background: var(--raised); color: var(--fg); text-align: left; overflow-wrap: anywhere; }
 .fx:hover:not(:disabled) { background: var(--hover); }
@@ -166,8 +167,8 @@ input[type="color"] { width: 40px; height: 36px; padding: 0; border: 1px solid v
 .sel-count { color: var(--fg); font-weight: 500; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .sel-count[data-none="true"] { color: var(--mut); font-weight: 400; }
 .board-wrap { container-type: inline-size; }
-.canvas { position: relative; width: 100%; user-select: none; }
-.key { position: absolute; display: flex; flex-direction: column; align-items: center; height: calc(var(--u) - 6px); padding: 3px 3px 2px; border: 1px solid var(--key-bd); border-radius: 6px; background: var(--key); color: var(--key-fg); font-size: max(9px, calc(var(--u) * .3)); line-height: 1.1; overflow: hidden; }
+.canvas { position: relative; width: 100%; max-width: 980px; margin: 0 auto; user-select: none; }
+.key { position: absolute; display: flex; flex-direction: column; align-items: center; height: var(--u); padding: 3px 3px 2px; border: 1px solid var(--key-bd); border-radius: 6px; background: var(--key); color: var(--key-fg); font-size: max(9px, calc(var(--u) * .3)); line-height: 1.1; overflow: hidden; }
 .key:hover:not(:disabled) { border-color: var(--bd-hover); }
 /* selected: a solid 2px accent border, a faint accent fill and a corner dot */
 .key[aria-pressed="true"], .key[aria-pressed="true"]:hover:not(:disabled) { border: 2px solid var(--accent); background: var(--accent-soft); color: var(--fg); }
@@ -208,6 +209,18 @@ dialog p { margin: 0 0 16px; color: var(--mut); }
 .toast strong { display: block; font-size: 12px; font-weight: 500; }
 .toast.ok { border-left-color: var(--ok); }
 .toast.error { border-left-color: var(--bad); }
+
+/* tall windows: the cards keep their content height instead of stretching */
+#boardCard, #livePanel { align-content: start; }
+
+/* wide: a narrower sidebar and inspector leave the centre column (the board) most of the window */
+@media (min-width: 1240px) {
+  .main { grid-template-columns: 240px minmax(0, 1fr) 300px; gap: 12px; }
+}
+/* very wide: the sidebar and inspector may grow again, but no further */
+@media (min-width: 1800px) {
+  .main { grid-template-columns: 280px minmax(0, 1fr) 340px; }
+}
 
 /* responsive: the inspector moves under the board, then the sidebar moves above it */
 @media (max-width: 1099px) {
@@ -351,6 +364,7 @@ dialog p { margin: 0 0 16px; color: var(--mut); }
         <span class="mm"><input id="act" class="input num" type="number" step="0.1"><span class="muted">mm</span></span>
       </div>
       <label><span class="sr">Actuation point slider</span><input id="actR" type="range"></label>
+      <p class="err" id="actErr" role="alert" hidden></p>
       <label class="switch"><span>Rapid trigger</span><input id="rt" type="checkbox" role="switch"></label>
       <div class="grid2" id="rtFields" hidden>
         <label class="field">Downstroke (mm)<input id="down" class="input" type="number" step="0.1"></label>
@@ -375,6 +389,18 @@ dialog p { margin: 0 0 16px; color: var(--mut); }
       <div class="col">
         <span class="field-label">Effect</span>
         <div id="effects" class="col"></div>
+      </div>
+      <div class="col" id="tintBox" hidden>
+        <span class="field-label" id="tintLabel">Colour</span>
+        <div class="row">
+          <button type="button" class="btn" id="tintFw" aria-pressed="false">Firmware colours</button>
+        </div>
+        <div class="swatches" id="tintSwatches" role="group" aria-labelledby="tintLabel"></div>
+        <div class="row">
+          <span class="tint-sw" id="tintSw" aria-hidden="true"></span>
+          <span class="muted" id="tintHex"></span>
+        </div>
+        <p class="note">Tint is sent to the keyboard as a colour on every key. Whether the firmware animates it is not confirmed on hardware.</p>
       </div>
       <label class="field" id="brightBox">Brightness
         <span class="range-out"><input id="bright" type="range" min="0" max="9"><output id="brightOut"></output></span>
@@ -604,7 +630,7 @@ function blank() {
     rapid_trigger: false,
     turbo: false,
     scale: 'auto',
-    lighting: { effect: 'off', brightness: 9, speed: 4, colors: Array(n).fill(DEFAULT_COLOUR) },
+    lighting: { effect: 'off', brightness: 9, speed: 4, tint: '', colors: Array(n).fill(DEFAULT_COLOUR) },
     remap: clone(S.layout.defaultRemap),
   };
 }
@@ -623,7 +649,7 @@ function changeCount() {
   n += diff(a.lighting.colors, b.lighting.colors);
   a.remap.forEach((row, l) => { n += diff(row, b.remap[l]); });
   for (const k of ['rapid_trigger', 'turbo', 'scale']) n += a[k] !== b[k];
-  for (const k of ['effect', 'brightness', 'speed']) n += a.lighting[k] !== b.lighting[k];
+  for (const k of ['effect', 'brightness', 'speed', 'tint']) n += a.lighting[k] !== b.lighting[k];
   return n;
 }
 
@@ -632,6 +658,7 @@ function loadEditor(e, name) {
   const base = blank();
   S.ed = { ...base, ...e, lighting: { ...base.lighting, ...(e.lighting || {}) }, remap: e.remap || base.remap };
   if (S.ed.lighting.colors?.length !== S.layout.keySlots) S.ed.lighting.colors = base.lighting.colors;
+  if (typeof S.ed.lighting.tint !== 'string') S.ed.lighting.tint = ''; // missing or null from the server means no tint
   S.current = name;
   S.saved = clone(S.ed);
   $('#pname').value = name ?? '';
@@ -961,16 +988,26 @@ const SHORT_LEGEND = {
   'Left Alt': 'Alt', 'Right Alt': 'Alt', 'Left Win': 'Win', 'Right Win': 'Win', Spacebar: 'Space',
 };
 
-// layoutBoard sizes the board to the container: one key unit is the container width over the widest row.
+// KEY_GAP is the fixed space between keys, in px. It does not scale with the window, so only the keys grow and shrink.
+const KEY_GAP = 5;
+
+// MAX_UNIT caps one key unit, in px, so keys do not grow huge on a maximised window.
+const MAX_UNIT = 58;
+
+// layoutBoard sizes the board to the container. The canvas is already capped in CSS (max-width), so w is the capped
+// width. The gaps are taken off the width first; the rest is shared out as key units across the widest row. A unit
+// above MAX_UNIT is capped, and the keys are then centred inside the canvas (--ox). The board height follows the rows.
 function layoutBoard() {
   const canvas = $('#canvas');
   const w = canvas.clientWidth;
   if (!w) return;
   const cols = Math.max(...S.layout.keys.map((k) => k.x + k.w));
   const rows = Math.max(...S.layout.keys.map((k) => k.y)) + 1;
-  const u = w / cols;
+  const u = Math.min(MAX_UNIT, (w - (cols - 1) * KEY_GAP) / cols); // one key unit, in px, without its gap
+  const used = cols * u + (cols - 1) * KEY_GAP; // the width the keys take up
   canvas.style.setProperty('--u', `${u}px`);
-  canvas.style.height = `${u * rows}px`;
+  canvas.style.setProperty('--ox', `${Math.max(0, (w - used) / 2)}px`);
+  canvas.style.height = `${u * rows + (rows - 1) * KEY_GAP}px`;
   S.keyEls.forEach(({ k, b }) => fitLegend(k, b, u));
 }
 
@@ -978,7 +1015,8 @@ function layoutBoard() {
 const measureCtx = document.createElement('canvas').getContext('2d');
 function fitLegend(k, b, u) {
   const el = b.querySelector('.legend');
-  const avail = k.w * u - 14; // button width (k.w * u less 6px of gap) less 3px padding and 1px border on each side
+  const width = k.w * u + (k.w - 1) * KEY_GAP; // the key's width: its units plus the gaps inside it
+  const avail = width - 14; // less 3px padding and 1px border on each side
   measureCtx.font = `600 100px ${getComputedStyle(el).fontFamily}`;
   const ratio = measureCtx.measureText(el.textContent).width / 100 || 1;
   el.style.fontSize = `${Math.min(Math.max(9, u * 0.3), avail / ratio)}px`;
@@ -989,9 +1027,10 @@ function buildBoard() {
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'key';
-    b.style.left = `calc(var(--u) * ${k.x} + 3px)`;
-    b.style.top = `calc(var(--u) * ${k.y} + 3px)`;
-    b.style.width = `calc(var(--u) * ${k.w} - 6px)`;
+    // each unit takes up one key unit plus one gap, so the gap between neighbours is KEY_GAP
+    b.style.left = `calc(var(--ox, 0px) + (var(--u) + ${KEY_GAP}px) * ${k.x})`;
+    b.style.top = `calc((var(--u) + ${KEY_GAP}px) * ${k.y})`;
+    b.style.width = `calc(var(--u) * ${k.w} + ${(k.w - 1) * KEY_GAP}px)`;
     // the depth bar and actuation line come first so the text paints over them
     const fill = document.createElement('span');
     fill.className = 'depth-fill';
@@ -1186,7 +1225,14 @@ function syncInspector() {
   setRange('#bright', ed.lighting.brightness);
   setRange('#speed', ed.lighting.speed);
   syncRemap();
-  $('#target').textContent = selCount() ? `Applies to ${selCount()} selected key${selCount() === 1 ? '' : 's'}.` : 'Applies to all keys.';
+  $('#actErr').hidden = true;
+  renderTarget();
+}
+
+// renderTarget says which keys the inspector's values will reach. It uses the same count as the selection summary.
+function renderTarget() {
+  const n = selCount();
+  $('#target').textContent = n ? `Applies to ${n} selected key${n === 1 ? '' : 's'}.` : 'Applies to all keys.';
 }
 
 function syncRemap() {
@@ -1206,6 +1252,22 @@ function setHidValue(v) {
   sel.value = String(v);
   $('#hid').value = String(v);
   $('#hidHex').textContent = `0x${hex(v)}`;
+}
+
+// liveAct writes the actuation point as the user types or drags it. Only actuation changes here; downstroke and
+// upstroke change only on Set on selection. An out-of-range value shows the hint and is not written.
+function liveAct(from) {
+  const v = parseFloat(from.value);
+  const { min, max } = P();
+  const ok = Number.isFinite(v) && v >= min && v <= max;
+  $('#actErr').textContent = ok ? '' : `Values must be between ${min} and ${max} mm.`;
+  $('#actErr').hidden = ok;
+  if (!ok) return;
+  ($('#act') === from ? $('#actR') : $('#act')).value = from.value;
+  for (const s of targets()) S.ed.actuation[s] = v;
+  renderTarget();
+  renderReadout();
+  touch();
 }
 
 function setActuation() {
@@ -1474,10 +1536,12 @@ function setEffect(id) {
   syncLighting();
 }
 
-// syncLighting shows the colour painter for Custom light, and the speed control for every other effect.
+// syncLighting shows the colour painter for Custom light, the tint row for animated effects, and the speed control for every other effect.
 function syncLighting() {
   const kind = S.layout.effects.find((e) => e.id === S.ed.lighting.effect)?.kind;
   $('#paintBox').hidden = kind !== 'custom';
+  $('#tintBox').hidden = kind !== 'mode';
+  renderTint();
   $('#brightBox').hidden = kind === 'custom';
   $('#speedBox').hidden = kind === 'custom';
 }
@@ -1537,6 +1601,7 @@ function renderSwatches() {
   });
   $('#swatches').replaceChildren(...nodes);
   renderColour();
+  renderTint();
 }
 
 function setColour(c) {
@@ -1577,6 +1642,38 @@ function removeColour(c) {
   renderSwatches();
 }
 
+// setTint sets the colour sent on every key for an animated effect. '' means use the firmware's own colours.
+function setTint(c) {
+  S.ed.lighting.tint = c;
+  touch();
+  renderTint();
+}
+
+// renderTint draws the Colour row for animated effects: Firmware colours, the palette, and the chosen tint.
+// It runs before the editor exists (renderSwatches at start-up), so it returns until S.ed is set.
+function renderTint() {
+  if (!S.ed) return;
+  const tint = S.ed.lighting.tint;
+  $('#tintFw').setAttribute('aria-pressed', String(!tint));
+  const nodes = S.palette.map((c) => {
+    const name = SWATCHES.find(([, h]) => h === c)?.[0] ?? c.toUpperCase();
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'swatch';
+    b.dataset.c = c;
+    b.style.background = c;
+    b.title = name;
+    b.setAttribute('aria-label', `Tint ${name}`);
+    b.setAttribute('aria-pressed', String(c === tint));
+    b.onclick = () => setTint(c);
+    return b;
+  });
+  $('#tintSwatches').replaceChildren(...nodes);
+  $('#tintSw').hidden = !tint;
+  $('#tintSw').style.background = tint;
+  $('#tintHex').textContent = tint ? tint.toUpperCase() : 'Firmware colours';
+}
+
 // ---- preview: a local approximation of the lighting, never sent to the keyboard ----
 
 // hsvHex returns a #rrggbb colour for hue h (0 to 1), saturation s and value v (0 to 1).
@@ -1605,6 +1702,7 @@ function previewColour(slot, t) {
   const p = S.pos.get(slot) ?? { x: 0, y: 0 };
   if (kind === 'off') return '#000000';
   if (kind === 'custom') return dim(S.ed.lighting.colors[slot] ?? '#000000', k);
+  if (kind === 'mode' && S.ed.lighting.tint) return dim(S.ed.lighting.tint, k); // the tint is sent as one colour on every key
   if (effect === 'always') return dim(base, k);
   if (effect === 'breath') return dim(base, k * (0.5 + 0.5 * Math.sin(TAU * t)));
   if (/spectrum|rainbow|rotate/.test(effect)) return hsvHex(((t * 0.1 + p.x) % 1 + 1) % 1, 1, k);
@@ -1708,8 +1806,8 @@ function bindEvents() {
   document.querySelectorAll('[data-section]').forEach((b) => { b.onclick = () => setSection(b.dataset.section); });
   document.querySelectorAll('[data-layer]').forEach((b) => { b.onclick = () => setLayer(Number(b.dataset.layer)); });
 
-  $('#act').oninput = (e) => { $('#actR').value = e.target.value; };
-  $('#actR').oninput = (e) => { $('#act').value = e.target.value; };
+  $('#act').oninput = (e) => liveAct(e.target);
+  $('#actR').oninput = (e) => liveAct(e.target);
   $('#setPerf').onclick = setActuation;
   $('#applyPerf').onclick = () => sendAndReport('Actuation', '/api/apply', perfBody());
   $('#rt').onchange = (e) => { S.ed.rapid_trigger = e.target.checked; $('#rtFields').hidden = !e.target.checked; touch(); };
@@ -1718,6 +1816,7 @@ function bindEvents() {
 
   bindRange('#bright', 'brightness');
   bindRange('#speed', 'speed');
+  $('#tintFw').onclick = () => setTint('');
   $('#paint').oninput = (e) => setColour(e.target.value);
   $('#addColour').onclick = addColour;
   $('#paintBtn').onclick = paintSelected;

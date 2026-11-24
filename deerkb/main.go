@@ -90,8 +90,8 @@ func openApp(h http.Handler) {
 	}
 	defer w.Destroy()
 	w.SetTitle("DeerKB")
-	w.SetSize(1180, 800, webview.HintNone)
-	w.SetSize(960, 640, webview.HintMin)
+	w.SetSize(1520, 960, webview.HintNone)
+	w.SetSize(1240, 780, webview.HintMin)
 	// No right-click menu: it would show browser commands such as Reload and View Source.
 	w.Init(`document.addEventListener("contextmenu", function (e) { e.preventDefault(); });`)
 	w.Init(bridgeShim)

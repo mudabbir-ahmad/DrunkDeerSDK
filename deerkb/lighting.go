@@ -40,13 +40,15 @@ var lightEffects = []lightEffect{
 }
 
 // LightSettings is the Colour tab state. Colors holds 126 "#rrggbb" values by slot and is used by custom only.
-// Base is a software scale (0-9) on the custom colours, as the CLI's --base-brightness. Missing means 9.
+// Tint is an optional "#rrggbb" colour for an animated mode; empty means no tint.
+// Base is a software scale (0-9) on the custom colours and the tint, as the CLI's --base-brightness. Missing means 9.
 type LightSettings struct {
 	Effect     string   `json:"effect"`
 	Brightness int      `json:"brightness"`
 	Speed      int      `json:"speed"`
 	Base       int      `json:"base"`
 	Colors     []string `json:"colors,omitempty"`
+	Tint       string   `json:"tint,omitempty"`
 }
 
 // UnmarshalJSON defaults Base to 9 when the key is absent, so an explicit 0 still means black.
@@ -111,18 +113,27 @@ func speedToFirmware(userSpeed int) byte {
 	return byte(1 + ((9-u)*8+4)/9) // (9-u)*8/9 rounded half up, plus 1
 }
 
-// lightingFrames builds the AE packets for one effect. The mode frame carries speedToFirmware(speed) at index 6.
-func lightingFrames(eff lightEffect, brightness, speed byte, rgb [keySlots][3]byte) [][]byte {
-	switch eff.Kind {
-	case "off":
-		return [][]byte{padFrame(cmdLight, 0x01, 0x00, 0x00, 0x05, 0x09)}
-	case "mode":
-		f := padFrame(cmdLight, 0x01, 0x00, 0x00, eff.Code, brightness, speedToFirmware(int(speed)))
-		return [][]byte{f}
+// parseTint validates the optional tint. Empty means no tint (on is false).
+func parseTint(s string) (rgb [3]byte, on bool, err error) {
+	if s == "" {
+		return rgb, false, nil
 	}
+	if len(s) != 7 || s[0] != '#' {
+		return rgb, false, badInput{fmt.Errorf("tint: %q is not #rrggbb", s)}
+	}
+	v, err := strconv.ParseUint(s[1:], 16, 24)
+	if err != nil {
+		return rgb, false, badInput{fmt.Errorf("tint: %q is not #rrggbb", s)}
+	}
+	return [3]byte{byte(v >> 16), byte(v >> 8), byte(v)}, true, nil
+}
+
+// perKeyFrames builds the RgbKeyDataPacket frames (0xAE 0x01 ... index 4 mode code, index 5 0x06), one colour per LED slot.
+// The packet has no speed field, so the speed byte is not sent in these frames.
+func perKeyFrames(code, brightness byte, rgb [keySlots][3]byte) [][]byte {
 	var out [][]byte
 	for i := 0; i < len(isoLEDs); i += rgbPerPacket {
-		f := padFrame(cmdLight, 0x01, 0x00, 0x00, eff.Code, 0x06, brightness, 0xFF)
+		f := padFrame(cmdLight, 0x01, 0x00, 0x00, code, 0x06, brightness, 0xFF)
 		off := 8
 		for _, slot := range isoLEDs[i:min(i+rgbPerPacket, len(isoLEDs))] {
 			f[off] = byte(slot) | 0x80
@@ -135,6 +146,29 @@ func lightingFrames(eff lightEffect, brightness, speed byte, rgb [keySlots][3]by
 		out = append(out, f)
 	}
 	return out
+}
+
+// tintedFrames builds the frames for an animated mode with one tint on every LED, scaled by base like custom colours.
+// The RgbKeyDataPacket has no speed field, so the speed setting is not sent with a tinted mode: speed may not apply to it.
+// Whether the firmware animates the tint is not confirmed on hardware.
+func tintedFrames(eff lightEffect, brightness byte, tint [3]byte, base int) [][]byte {
+	var rgb [keySlots][3]byte
+	for _, slot := range isoLEDs {
+		rgb[slot] = tint
+	}
+	return perKeyFrames(eff.Code, brightness, scaleRGB(rgb, base))
+}
+
+// lightingFrames builds the AE packets for one effect. The mode frame carries speedToFirmware(speed) at index 6.
+func lightingFrames(eff lightEffect, brightness, speed byte, rgb [keySlots][3]byte) [][]byte {
+	switch eff.Kind {
+	case "off":
+		return [][]byte{padFrame(cmdLight, 0x01, 0x00, 0x00, 0x05, 0x09)}
+	case "mode":
+		f := padFrame(cmdLight, 0x01, 0x00, 0x00, eff.Code, brightness, speedToFirmware(int(speed)))
+		return [][]byte{f}
+	}
+	return perKeyFrames(eff.Code, brightness, rgb)
 }
 
 func isLightAck(f []byte) bool { return f[0] == cmdLight }
@@ -161,10 +195,18 @@ func (k *Keyboard) ApplyLighting(ls LightSettings) (Step, error) {
 		return Step{}, err
 	}
 	rgb = scaleRGB(rgb, ls.Base)
+	tint, tinted, err := parseTint(ls.Tint)
+	if err != nil {
+		return Step{}, err
+	}
+	frames := lightingFrames(eff, byte(ls.Brightness), byte(ls.Speed), rgb)
+	if tinted && eff.Kind == "mode" {
+		frames = tintedFrames(eff, byte(ls.Brightness), tint, ls.Base)
+	}
 	resume := k.pauseLocked()
 	defer resume()
 	acked := true
-	for _, f := range lightingFrames(eff, byte(ls.Brightness), byte(ls.Speed), rgb) {
+	for _, f := range frames {
 		ok, err := k.sendLocked(f, isLightAck)
 		if err != nil {
 			return Step{Name: "Lighting", Warn: err.Error()}, err

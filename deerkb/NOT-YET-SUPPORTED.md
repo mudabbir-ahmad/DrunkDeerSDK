@@ -26,6 +26,7 @@ Status key: ❌ not built · ⚠️ built but unverified on hardware · 🔎 whe
 
 ## Lighting
 - Speed mapping: 0 is slowest and maps to firmware 9; the firmware direction is not confirmed on hardware.
+- Tinted animated effects send the per-key packet with the animation's mode code; whether the firmware animates the tint is not confirmed on hardware.
 
 ## App-level
 | Feature | Notes |

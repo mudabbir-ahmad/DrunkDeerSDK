@@ -130,6 +130,11 @@ func checkLighting(ls LightSettings) error {
 	if ls.Brightness < 0 || ls.Brightness > 9 || ls.Speed < 0 || ls.Speed > 9 {
 		return badInput{fmt.Errorf("brightness and speed must be 0-9")}
 	}
+	if ls.Tint != "" {
+		if _, _, err := parseTint(ls.Tint); err != nil {
+			return err
+		}
+	}
 	_, err := parseColors(ls.Colors)
 	return err
 }

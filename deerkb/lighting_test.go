@@ -128,6 +128,59 @@ func TestLightingFramesModeSpeedIndex(t *testing.T) {
 	}
 }
 
+// tintedModeTest checks every frame is an RgbKeyDataPacket with the mode code, and that every LED entry is the tint.
+func TestTintedModeFrames(t *testing.T) {
+	eff, _ := findEffect("ripple")
+	tint, on, err := parseTint("#8000ff")
+	if err != nil || !on {
+		t.Fatalf("parseTint: on %t, err %v", on, err)
+	}
+	frames := tintedFrames(eff, 9, tint, 9)
+	if len(frames) == 0 {
+		t.Fatal("no frames")
+	}
+	entries := 0
+	for n, f := range frames {
+		if f[0] != cmdLight || f[1] != 0x01 {
+			t.Errorf("frame %d: header % x, want AE 01", n, f[:2])
+		}
+		if f[4] != eff.Code {
+			t.Errorf("frame %d: mode_index %#x, want %#x", n, f[4], eff.Code)
+		}
+		if f[5] != 0x06 {
+			t.Errorf("frame %d: index 5 is %#x, want 0x06", n, f[5])
+		}
+		for off := 8; off+3 < len(f) && f[off] != 0xFF; off += 4 {
+			entries++
+			if f[off+1] != 0x80 || f[off+2] != 0x00 || f[off+3] != 0xFF {
+				t.Errorf("frame %d entry at %d: colour % x, want 80 00 ff", n, off, f[off+1:off+4])
+			}
+		}
+	}
+	if entries != len(isoLEDs) {
+		t.Errorf("tinted entries: got %d, want %d", entries, len(isoLEDs))
+	}
+}
+
+func TestUntintedModeIsSingleSetFrame(t *testing.T) {
+	eff, _ := findEffect("ripple")
+	if _, on, _ := parseTint(""); on {
+		t.Error("empty tint: reported as set")
+	}
+	f := lightingFrames(eff, 9, 5, [keySlots][3]byte{})
+	if len(f) != 1 || f[0][0] != cmdLight || f[0][1] != 0x01 || f[0][4] != eff.Code {
+		t.Errorf("untinted mode: got %v, want one SetLightingMode frame with code %#x", f, eff.Code)
+	}
+}
+
+func TestParseTintRejectsBadInput(t *testing.T) {
+	for _, s := range []string{"8000ff", "#8000f", "#80000ff", "#gg0000", "#+80000", "purple"} {
+		if _, on, err := parseTint(s); err == nil || on {
+			t.Errorf("tint %q: accepted", s)
+		}
+	}
+}
+
 func TestLightBaseJSONDefault(t *testing.T) {
 	var ls LightSettings
 	if err := json.Unmarshal([]byte(`{"effect":"custom","brightness":9,"speed":5}`), &ls); err != nil {
