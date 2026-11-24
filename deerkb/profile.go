@@ -179,6 +179,20 @@ func validateProfile(p Profile) error {
 
 func round2(v float64) float64 { return math.Round(v*100) / 100 }
 
+// unifyISOEnter is the one rule for the ISO Enter pair: the lower slot's actuation, downstroke and upstroke are set to
+// the upper slot's. It returns copies, so the caller's tables are not changed. Tables too short to hold the pair are
+// returned as copies unchanged; the callers check lengths.
+func unifyISOEnter(act, down, up []float64) (a, d, u []float64) {
+	a = append([]float64(nil), act...)
+	d = append([]float64(nil), down...)
+	u = append([]float64(nil), up...)
+	hi, lo := isoEnterPair[0], isoEnterPair[1]
+	if len(a) > hi && len(d) > hi && len(u) > hi && len(a) > lo && len(d) > lo && len(u) > lo {
+		a[lo], d[lo], u[lo] = a[hi], d[hi], u[hi]
+	}
+	return a, d, u
+}
+
 // profileToEditor reads a profile into editor state. Profiles written by the web driver have no deerkb block,
 // so rapid trigger is inferred from non-zero press or release values.
 func profileToEditor(p Profile) (Editor, error) {
@@ -196,7 +210,10 @@ func profileToEditor(p Profile) (Editor, error) {
 	}
 	for i, k := range p.Keys {
 		e.Actuation[i], e.Downstroke[i], e.Upstroke[i] = k.ActionPoint, k.Downstroke, k.Upstroke
-		if k.Downstroke > 0 || k.Upstroke > 0 {
+	}
+	e.Actuation, e.Downstroke, e.Upstroke = unifyISOEnter(e.Actuation, e.Downstroke, e.Upstroke)
+	for i := range e.Downstroke {
+		if e.Downstroke[i] > 0 || e.Upstroke[i] > 0 {
 			e.RapidTrigger = true
 		}
 	}
@@ -241,6 +258,7 @@ func editorToProfile(name string, e Editor, rtp json.RawMessage) (Profile, error
 	if e.LastWin == "" {
 		e.LastWin = "off"
 	}
+	actuation, downstroke, upstroke := unifyISOEnter(e.Actuation, e.Downstroke, e.Upstroke)
 	if len(rtp) == 0 {
 		rtp = json.RawMessage(defaultRTP)
 	}
@@ -265,9 +283,9 @@ func editorToProfile(name string, e Editor, rtp json.RawMessage) (Profile, error
 	for i := range p.Keys {
 		p.Keys[i] = profileKey{
 			KeyName:     webNames[i],
-			ActionPoint: round2(e.Actuation[i]),
-			Downstroke:  round2(e.Downstroke[i]),
-			Upstroke:    round2(e.Upstroke[i]),
+			ActionPoint: round2(actuation[i]),
+			Downstroke:  round2(downstroke[i]),
+			Upstroke:    round2(upstroke[i]),
 		}
 	}
 	if err := validateProfile(p); err != nil {

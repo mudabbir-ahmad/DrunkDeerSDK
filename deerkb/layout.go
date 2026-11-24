@@ -107,6 +107,10 @@ var isoKeys = []keyDef{
 	{121, 0x4F, "Right", 15, 5.5, 1, ""},
 }
 
+// isoEnterPair are the two firmware slots of the ISO Enter, upper then lower. They are one key, so they always hold one
+// actuation, downstroke and upstroke value: the upper slot's (see unifyISOEnter).
+var isoEnterPair = [2]int{55, 76}
+
 // noRemap are keys shown but not written by the remap table.
 var noRemap = map[int]bool{116: true}
 

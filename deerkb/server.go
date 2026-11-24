@@ -143,10 +143,12 @@ func (s *server) apply(w http.ResponseWriter, r *http.Request) {
 	if !decode(w, r, &e) {
 		return
 	}
+	// The ISO Enter pair is one key: both slots are written with the upper slot's values.
+	actuation, downstroke, upstroke := unifyISOEnter(e.Actuation, e.Downstroke, e.Upstroke)
 	steps, err := s.kb.Apply(ApplyRequest{
-		Actuation:    e.Actuation,
-		Downstroke:   e.Downstroke,
-		Upstroke:     e.Upstroke,
+		Actuation:    actuation,
+		Downstroke:   downstroke,
+		Upstroke:     upstroke,
 		RapidTrigger: e.RapidTrigger,
 		Turbo:        e.Turbo,
 		Scale:        e.Scale,

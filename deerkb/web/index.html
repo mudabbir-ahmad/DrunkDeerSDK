@@ -523,6 +523,14 @@ const enc = encodeURIComponent;
 const clone = (v) => structuredClone(v);
 const hex = (v) => v.toString(16).padStart(2, '0').toUpperCase();
 const LINK = { 55: 76, 76: 55 }; // the two halves of ISO Enter always select together
+// pairEnter is the one rule for ISO Enter, the same as unifyISOEnter in profile.go: the lower half (76) takes the
+// upper half's (55) actuation, downstroke and upstroke. It changes ed in place and returns it.
+function pairEnter(ed) {
+  for (const t of ['actuation', 'downstroke', 'upstroke']) {
+    if (ed[t]) ed[t][76] = ed[t][55];
+  }
+  return ed;
+}
 const SECTIONS = ['actuation', 'lighting', 'remap'];
 const THEME_KEY = 'deerkb-theme';
 // Same rule as cleanName in profile.go, so a name accepted here is accepted by the server.
@@ -678,7 +686,7 @@ function blank() {
 }
 
 function perfBody() {
-  const { actuation, downstroke, upstroke, rapid_trigger, turbo, scale } = S.ed;
+  const { actuation, downstroke, upstroke, rapid_trigger, turbo, scale } = pairEnter(clone(S.ed));
   return { actuation, downstroke, upstroke, rapid_trigger, turbo, scale };
 }
 
@@ -698,7 +706,7 @@ function changeCount() {
 // loadEditor replaces the editor with a profile, or with a blank one when name is null.
 function loadEditor(e, name) {
   const base = blank();
-  S.ed = { ...base, ...e, lighting: { ...base.lighting, ...(e.lighting || {}) }, remap: e.remap || base.remap };
+  S.ed = pairEnter({ ...base, ...e, lighting: { ...base.lighting, ...(e.lighting || {}) }, remap: e.remap || base.remap });
   if (S.ed.lighting.colors?.length !== S.layout.keySlots) S.ed.lighting.colors = base.lighting.colors;
   if (typeof S.ed.lighting.tint !== 'string') S.ed.lighting.tint = ''; // missing or null from the server means no tint
   S.current = name;
@@ -1223,7 +1231,9 @@ function renderToolbar() {
   $('#showVals').setAttribute('aria-pressed', String(S.showValues));
 }
 
+// setSel replaces the selection. Either half of ISO Enter brings the other half with it.
 function setSel(set) {
+  for (const s of [...set]) if (LINK[s] !== undefined) set.add(LINK[s]);
   S.sel = set;
   renderSelection();
 }
@@ -1338,6 +1348,7 @@ function liveAct(from) {
   if (!ok) return;
   ($('#act') === from ? $('#actR') : $('#act')).value = from.value;
   for (const s of targets()) S.ed.actuation[s] = v;
+  pairEnter(S.ed);
   renderTarget();
   renderReadout();
   touch();
@@ -1353,6 +1364,7 @@ function setActuation() {
     S.ed.downstroke[s] = d;
     S.ed.upstroke[s] = u;
   }
+  pairEnter(S.ed);
   touch();
 }
 

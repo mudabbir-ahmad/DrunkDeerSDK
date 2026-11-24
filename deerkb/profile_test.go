@@ -141,6 +141,46 @@ func TestLastWinLimits(t *testing.T) {
 	}
 }
 
+// TestISOEnterPairIsOneKey: slots 55 and 76 are one ISO Enter, so both must hold the upper slot's values.
+func TestISOEnterPairIsOneKey(t *testing.T) {
+	hi, lo := isoEnterPair[0], isoEnterPair[1]
+
+	src := loadTestProfile(t)
+	e, err := profileToEditor(src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	e.Actuation[hi], e.Actuation[lo] = 1.2, 2.8
+	e.Downstroke[hi], e.Downstroke[lo] = 0.3, 0.9
+	e.Upstroke[hi], e.Upstroke[lo] = 0.4, 1.1
+	p, err := editorToProfile(src.ShowName, e, src.RTP)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p.Keys[hi].ActionPoint != 1.2 || p.Keys[lo].ActionPoint != 1.2 ||
+		p.Keys[hi].Downstroke != 0.3 || p.Keys[lo].Downstroke != 0.3 ||
+		p.Keys[hi].Upstroke != 0.4 || p.Keys[lo].Upstroke != 0.4 {
+		t.Errorf("editorToProfile: ISO Enter halves %+v and %+v, want the upper slot's values", p.Keys[hi], p.Keys[lo])
+	}
+
+	// A profile with different values for the two halves reads back with equal values.
+	odd := loadTestProfile(t)
+	odd.Keys[hi].ActionPoint, odd.Keys[lo].ActionPoint = 1.2, 2.8
+	odd.Keys[hi].Downstroke, odd.Keys[lo].Downstroke = 0.3, 0.9
+	odd.Keys[hi].Upstroke, odd.Keys[lo].Upstroke = 0.4, 1.1
+	got, err := profileToEditor(odd)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Actuation[lo] != got.Actuation[hi] || got.Downstroke[lo] != got.Downstroke[hi] || got.Upstroke[lo] != got.Upstroke[hi] {
+		t.Errorf("profileToEditor: ISO Enter halves differ: act %g/%g down %g/%g up %g/%g",
+			got.Actuation[hi], got.Actuation[lo], got.Downstroke[hi], got.Downstroke[lo], got.Upstroke[hi], got.Upstroke[lo])
+	}
+	if got.Actuation[lo] != 1.2 {
+		t.Errorf("profileToEditor: lower half actuation %g, want the upper slot's 1.2", got.Actuation[lo])
+	}
+}
+
 func TestCleanName(t *testing.T) {
 	for _, s := range []string{"../x", "", "a/b", `x\y`, "bad:name", strings.Repeat("a", 41)} {
 		if _, err := cleanName(s); err == nil {
