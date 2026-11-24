@@ -110,12 +110,12 @@ func scaleRGB(rgb [keySlots][3]byte, base int) [keySlots][3]byte {
 	return rgb
 }
 
-// speedToFirmware maps the user's speed (0 = slowest, 9 = fastest) to the firmware byte, which is inverted:
-// user 0 -> 9 (slowest), user 9 -> 1 (fastest). The result is never 0, so speed cannot read as off.
-// The direction is from the SDK comments and is not confirmed on hardware.
+// speedToFirmware maps the user's speed (0 = slowest, 9 = fastest) straight to the firmware byte, unchanged.
+// The result is never 0, so speed cannot read as off: user 0 and user 1 both map to 1, the slowest.
+// Input is clamped to 0-9. Not confirmed on hardware.
 func speedToFirmware(userSpeed int) byte {
 	u := min(max(userSpeed, 0), 9)
-	return byte(1 + ((9-u)*8+4)/9) // (9-u)*8/9 rounded half up, plus 1
+	return byte(max(u, 1))
 }
 
 // parseTint validates the optional tint. Empty means no tint (on is false).
@@ -164,13 +164,14 @@ func tintedFrames(eff lightEffect, brightness byte, tint [3]byte, base int) [][]
 	return perKeyFrames(eff.Code, brightness, scaleRGB(rgb, base))
 }
 
-// lightingFrames builds the AE packets for one effect. The mode frame carries speedToFirmware(speed) at index 6.
+// lightingFrames builds the AE packets for one effect. The mode frame carries speedToFirmware(speed) at index 5
+// and brightness at index 6: the firmware reads them in that order, opposite to the SDK field names.
 func lightingFrames(eff lightEffect, brightness, speed byte, rgb [keySlots][3]byte) [][]byte {
 	switch eff.Kind {
 	case "off":
 		return [][]byte{padFrame(cmdLight, 0x01, 0x00, 0x00, 0x05, 0x09)}
 	case "mode":
-		f := padFrame(cmdLight, 0x01, 0x00, 0x00, eff.Code, brightness, speedToFirmware(int(speed)))
+		f := padFrame(cmdLight, 0x01, 0x00, 0x00, eff.Code, speedToFirmware(int(speed)), brightness)
 		return [][]byte{f}
 	}
 	return perKeyFrames(eff.Code, brightness, rgb)

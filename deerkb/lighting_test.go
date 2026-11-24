@@ -97,35 +97,30 @@ func TestLightingFramesBaseZeroIsBlack(t *testing.T) {
 }
 
 func TestSpeedToFirmware(t *testing.T) {
-	if got := speedToFirmware(0); got != 9 {
-		t.Errorf("user 0: got %d, want 9 (slowest)", got)
+	cases := map[int]byte{0: 1, 1: 1, 9: 9, -3: 1, 12: 9}
+	for u, want := range cases {
+		if got := speedToFirmware(u); got != want {
+			t.Errorf("user %d: got %d, want %d", u, got, want)
+		}
 	}
-	if got := speedToFirmware(9); got != 1 {
-		t.Errorf("user 9: got %d, want 1 (fastest)", got)
-	}
-	prev := byte(255)
-	for u := -3; u <= 12; u++ {
+	prev := byte(0)
+	for u := 0; u <= 9; u++ {
 		got := speedToFirmware(u)
 		if got == 0 {
 			t.Errorf("user %d: firmware 0 would read as off", u)
 		}
-		if u >= 0 && u <= 9 && got > prev {
-			t.Errorf("user %d: firmware %d rises above %d", u, got, prev)
+		if got < prev {
+			t.Errorf("user %d: firmware %d falls below %d", u, got, prev)
 		}
-		if u >= 0 && u <= 9 {
-			prev = got
-		}
-	}
-	if speedToFirmware(-3) != 9 || speedToFirmware(12) != 1 {
-		t.Error("out-of-range speed not clamped to 0-9")
+		prev = got
 	}
 }
 
 func TestLightingFramesModeSpeedIndex(t *testing.T) {
 	eff, _ := findEffect("always")
-	f := lightingFrames(eff, 9, 0, [keySlots][3]byte{})
-	if len(f) != 1 || f[0][6] != 9 {
-		t.Errorf("mode speed 0: got frame %v, want speed byte 9 at index 6", f)
+	f := lightingFrames(eff, 3, 9, [keySlots][3]byte{})
+	if len(f) != 1 || f[0][5] != 9 || f[0][6] != 3 {
+		t.Errorf("mode speed 9 brightness 3: got frame %v, want speed 9 at index 5 and brightness 3 at index 6", f)
 	}
 }
 
