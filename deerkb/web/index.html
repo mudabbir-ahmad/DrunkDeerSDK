@@ -1,0 +1,1386 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DeerKB</title>
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #0a0a0c; --panel: #111114; --card: #111114; --raised: #18181c; --hover: #1f1f24; --input: #0d0d10;
+  --fg: #ededf0; --mut: #8b8b94;
+  --bd: rgba(255,255,255,.08); --bd-strong: rgba(255,255,255,.1); --bd-hover: rgba(255,255,255,.16);
+  --key-bd: rgba(255,255,255,.06); --track: #26262c;
+  --row-hover: rgba(255,255,255,.04); --row-on: rgba(255,255,255,.06);
+  --glass: rgba(14,14,18,.6);
+  --accent: #f97316; --accent-hover: #fb923c; --accent-ink: #0a0a0c;
+  --accent-soft: rgba(249,115,22,.12); --accent-ring: rgba(249,115,22,.2); --focus: #f97316;
+  --key: #15151a; --key-fg: #8b8b94;
+  --ok: #3fcf8e; --info: #7fb0ff; --warn: #f5b642; --bad: #ff6b6b; --bad-fill: #d93a3a;
+  --sans: "Outfit", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+}
+[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f6f6f7; --panel: #ffffff; --card: #ffffff; --raised: #f2f2f4; --hover: #e9e9ec; --input: #ffffff;
+  --fg: #111114; --mut: #6b6b75;
+  --bd: rgba(0,0,0,.08); --bd-strong: rgba(0,0,0,.12); --bd-hover: rgba(0,0,0,.2);
+  --key-bd: rgba(0,0,0,.06); --track: #e2e2e6;
+  --row-hover: rgba(0,0,0,.04); --row-on: rgba(0,0,0,.06);
+  --glass: rgba(255,255,255,.7);
+  --accent: #ea580c; --accent-hover: #f97316; --accent-ink: #ffffff;
+  --accent-soft: rgba(234,88,12,.1); --accent-ring: rgba(234,88,12,.2); --focus: #ea580c;
+  --key: #ececef; --key-fg: #6b6b75;
+  --ok: #11764a; --info: #2452b8; --warn: #9a6700; --bad: #b42318;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; margin: 0; }
+body { background: var(--bg); color: var(--fg); font: 400 13px/1.5 var(--sans); }
+strong, b { font-weight: 500; }
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+button:disabled, input:disabled, select:disabled { cursor: not-allowed; opacity: .5; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+[inert] { opacity: .55; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
+.ic { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.grow { flex: 1; }
+
+/* shell */
+.app { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; height: 100vh; }
+.topbar { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; flex-wrap: wrap; gap: 12px; min-height: 48px; padding: 6px 16px; background: var(--glass); -webkit-backdrop-filter: blur(24px) saturate(1.6); backdrop-filter: blur(24px) saturate(1.6); border-bottom: 1px solid var(--bd); }
+.brand { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 600; }
+.logo { width: 20px; height: 20px; border-radius: 6px; background: var(--fg); }
+.chip { padding: 2px 10px; border: 1px solid var(--bd-strong); border-radius: 999px; background: var(--raised); color: var(--mut); font-size: 12px; white-space: nowrap; }
+.conn { display: flex; align-items: center; gap: 6px; color: var(--mut); font-size: 13px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--mut); }
+.dot[data-tone="ok"] { background: var(--ok); }
+.dot[data-tone="info"] { background: var(--info); }
+.dot[data-tone="bad"] { background: var(--bad); }
+.main { display: grid; grid-template-columns: 280px minmax(0, 1fr) 340px; grid-template-rows: minmax(0, 1fr); gap: 16px; min-height: 0; padding: 16px; overflow: hidden; }
+.pane { display: flex; flex-direction: column; gap: 16px; min-width: 0; min-height: 0; overflow: auto; }
+.pane > .card { flex: none; }
+.side { grid-column: 1; }
+.center { grid-column: 2; }
+.inspector { grid-column: 3; gap: 12px; }
+.footer { display: flex; align-items: center; flex-wrap: wrap; gap: 12px 16px; padding: 12px 16px; background: var(--panel); border-top: 1px solid var(--bd); }
+.foot-status { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.dirty { display: flex; align-items: center; gap: 8px; font-weight: 500; }
+.dirty::before { content: ""; flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--mut); }
+.dirty[data-state="dirty"]::before { background: var(--warn); }
+.dirty[data-state="clean"]::before { background: var(--ok); }
+
+/* cards and text */
+.card { min-width: 0; padding: 16px; background: var(--card); border: 1px solid var(--bd); border-radius: 12px; }
+.col { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.profile-bar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px; }
+.profile-bar .field { flex: 1 1 220px; }
+.profile-bar > .muted { flex: 1 0 100%; }
+.eyebrow { margin: 0; font-size: 15px; font-weight: 600; color: var(--fg); }
+.muted { margin: 0; color: var(--mut); font-size: 13px; }
+.row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.between { justify-content: space-between; }
+.field { display: flex; flex-direction: column; gap: 4px; min-width: 0; color: var(--mut); font-size: 13px; }
+.field-label { color: var(--mut); font-size: 13px; }
+.input { width: 100%; min-height: 36px; padding: 0 10px; border: 1px solid var(--bd-strong); border-radius: 8px; background: var(--input); color: var(--fg); }
+.input:focus { border-color: var(--accent); outline: 3px solid var(--accent-ring); outline-offset: 0; }
+.input.num { width: 96px; }
+.mm { display: flex; align-items: center; gap: 6px; }
+.range-out { display: flex; align-items: center; gap: 8px; }
+.range-out input { flex: 1; }
+.range-out output { min-width: 16px; color: var(--fg); text-align: right; }
+input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 14px; margin: 0; background: transparent; cursor: pointer; }
+input[type="range"]::-webkit-slider-runnable-track { height: 4px; border-radius: 999px; background: var(--track); }
+input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; margin-top: -5px; border: 1px solid rgba(0,0,0,.35); border-radius: 50%; background: #ededf0; }
+input[type="range"]::-moz-range-track { height: 4px; border-radius: 999px; background: var(--track); }
+input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border: 1px solid rgba(0,0,0,.35); border-radius: 50%; background: #ededf0; }
+input[type="color"] { width: 40px; height: 36px; padding: 0; border: 1px solid var(--bd-strong); border-radius: 8px; background: none; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.target { margin: 0; color: var(--mut); font-size: 13px; }
+.notice { margin: 0; padding: 8px 12px; border: 1px solid var(--bd); border-left: 2px solid var(--warn); border-radius: 12px; background: var(--card); font-size: 13px; }
+.search { display: block; }
+
+/* buttons */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 36px; padding: 0 14px; border: 1px solid var(--bd-strong); border-radius: 8px; background: var(--raised); color: var(--fg); font-weight: 500; white-space: nowrap; }
+.btn:hover:not(:disabled) { background: var(--hover); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.primary:hover:not(:disabled) { background: var(--accent-hover); border-color: var(--accent-hover); }
+.btn.ghost { background: transparent; border-color: transparent; color: var(--mut); }
+.btn.ghost:hover:not(:disabled) { background: transparent; color: var(--fg); }
+.btn.destructive { background: var(--bad-fill); border-color: var(--bad-fill); color: #fff; }
+.btn.destructive:hover:not(:disabled) { background: #c42f2f; border-color: #c42f2f; }
+.btn[aria-pressed="true"] { background: var(--hover); border-color: var(--mut); }
+.tb-group { display: flex; align-items: center; gap: 2px; padding: 3px; border: 1px solid var(--bd-strong); border-radius: 999px; background: var(--glass); -webkit-backdrop-filter: blur(24px) saturate(1.6); backdrop-filter: blur(24px) saturate(1.6); }
+.tb-group .btn { min-height: 30px; padding: 0 12px; border-radius: 999px; }
+.tb-btn { display: grid; place-items: center; width: 30px; height: 30px; border: 0; border-radius: 999px; background: transparent; color: var(--fg); }
+.tb-btn:hover { background: var(--hover); }
+.acts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.seg { display: flex; gap: 2px; padding: 3px; border: 1px solid var(--bd-strong); border-radius: 999px; background: var(--raised); }
+.seg button { flex: 1; min-height: 28px; padding: 4px 12px; border: 0; border-radius: 999px; background: transparent; color: var(--mut); font-weight: 500; }
+.seg button:hover { color: var(--fg); }
+.seg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
+.switch { display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; }
+.switch input { appearance: none; position: relative; flex: none; width: 32px; height: 18px; margin: 0; border: 1px solid var(--bd-strong); border-radius: 999px; background: var(--raised); cursor: pointer; }
+.switch input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; border-radius: 50%; background: var(--mut); }
+.switch input:checked { background: var(--fg); border-color: var(--fg); }
+.switch input:checked::after { transform: translateX(14px); background: var(--bg); }
+.swatches { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 6px; }
+.swatch { aspect-ratio: 1; min-width: 0; padding: 0; border: 1px solid var(--bd-strong); border-radius: 8px; }
+.swatch:hover { border-color: var(--fg); }
+.btn, .tb-btn, .seg button, .prof, .key, .input, .swatch, .switch input { transition: background-color .15s ease, border-color .15s ease, color .15s ease; }
+
+/* profiles and device */
+.plist { display: flex; flex-direction: column; gap: 2px; min-height: 120px; max-height: 420px; margin: 0; padding: 0; overflow: auto; list-style: none; }
+.prof { position: relative; display: flex; align-items: center; gap: 8px; width: 100%; height: 36px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; color: var(--fg); text-align: left; }
+.prof:hover { background: var(--row-hover); }
+.prof[aria-current="true"] { background: var(--row-on); font-weight: 500; }
+.prof[aria-current="true"]::before { content: ""; position: absolute; left: 0; top: 8px; bottom: 8px; width: 2px; border-radius: 2px; background: var(--accent); }
+.prof-name { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.unsaved { flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--warn); }
+.pgroup { padding: 10px 10px 4px; color: var(--mut); font-size: 11px; font-weight: 500; }
+.pnote { padding: 6px 10px; color: var(--mut); font-size: 13px; }
+.rename { display: flex; flex-direction: column; gap: 8px; padding: 10px; border: 1px solid var(--bd); border-radius: 12px; background: var(--raised); }
+.err { margin: 0; color: var(--bad); font-size: 13px; }
+.facts { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 12px; margin: 0; font-size: 13px; }
+.facts dt { color: var(--mut); }
+.facts dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
+.fw { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+
+/* board */
+.toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.sel-summary { color: var(--mut); font-size: 13px; }
+.board-wrap { container-type: inline-size; }
+.canvas { position: relative; width: 100%; user-select: none; }
+.key { position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center; height: calc(var(--u) - 4px); padding: 2px 3px; border: 1px solid var(--key-bd); border-radius: 6px; background: var(--key); color: var(--key-fg); font-size: max(9px, calc(var(--u) * .3)); line-height: 1.1; overflow: hidden; }
+.key:hover:not(:disabled) { border-color: var(--bd-hover); }
+.key[aria-pressed="true"], .key[aria-pressed="true"]:hover:not(:disabled) { border-color: var(--accent); background: var(--accent-soft); color: var(--fg); }
+.key:disabled { border-style: dashed; opacity: .4; }
+.key .legend { max-width: 100%; overflow: hidden; white-space: nowrap; font-weight: 500; }
+.key small { max-width: 100%; overflow: hidden; white-space: nowrap; font-size: .85em; opacity: .85; }
+.pip { position: absolute; top: 3px; left: 3px; width: 6px; height: 6px; border-radius: 50%; background: var(--mut); }
+
+/* live */
+.scale { display: flex; align-items: center; gap: 8px; color: var(--mut); font-size: 12px; }
+.scale .bar { flex: 1; height: 4px; border-radius: 999px; background: var(--track); }
+
+/* toasts and dialog */
+dialog { width: min(420px, calc(100% - 32px)); padding: 20px; border: 1px solid var(--bd-strong); border-radius: 12px; background: var(--card); color: var(--fg); box-shadow: 0 16px 40px rgba(0,0,0,.5); }
+dialog::backdrop { background: rgb(0 0 0 / .6); }
+dialog h2 { margin: 0 0 8px; font-size: 15px; font-weight: 600; }
+dialog p { margin: 0 0 16px; color: var(--mut); }
+.actions { display: flex; justify-content: flex-end; gap: 8px; }
+.toasts { position: fixed; right: 16px; bottom: 88px; z-index: 20; display: flex; flex-direction: column; gap: 8px; width: min(380px, calc(100vw - 32px)); }
+.toast { padding: 10px 12px; border: 1px solid var(--bd-strong); border-left: 2px solid var(--info); border-radius: 12px; background: var(--card); font-size: 13px; overflow-wrap: anywhere; }
+.toast strong { display: block; font-size: 12px; font-weight: 500; }
+.toast.ok { border-left-color: var(--ok); }
+.toast.error { border-left-color: var(--bad); }
+
+/* responsive: the inspector moves under the board, then the sidebar moves above it */
+@media (max-width: 1099px) {
+  .app { height: auto; min-height: 100vh; }
+  .main { grid-template-columns: 280px minmax(0, 1fr); grid-template-rows: auto auto; overflow: visible; }
+  .side { grid-row: 1 / 3; }
+  .center { grid-column: 2; grid-row: 1; }
+  .inspector { grid-column: 2; grid-row: 2; }
+  .pane { overflow: visible; }
+  .plist { max-height: 320px; }
+}
+@media (max-width: 700px) {
+  .main { grid-template-columns: minmax(0, 1fr); padding: 12px; }
+  .side, .center, .inspector { grid-column: 1; grid-row: auto; }
+  .plist { max-height: 200px; }
+  .grid2 { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<svg class="sprite" aria-hidden="true" focusable="false">
+  <symbol id="i-redetect" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+</svg>
+
+<header class="topbar">
+  <div class="brand"><span class="logo" aria-hidden="true"></span>DeerKB</div>
+  <span class="chip" id="chip">No keyboard</span>
+  <span class="conn" role="status"><span class="dot" id="connDot"></span><span id="connText">Checking…</span></span>
+  <span class="grow"></span>
+  <div class="tb-group">
+    <button type="button" class="tb-btn" id="themeBtn"><svg class="ic" aria-hidden="true"><use id="themeIcon" href="#i-moon"></use></svg></button>
+    <button type="button" class="tb-btn" id="redetect" title="Re-read keyboard" aria-label="Re-read keyboard"><svg class="ic" aria-hidden="true"><use href="#i-redetect"></use></svg></button>
+    <button type="button" class="btn ghost" id="quit">Quit</button>
+  </div>
+</header>
+
+<div class="main">
+  <aside class="pane side" aria-label="Profiles and device">
+    <section class="card col" aria-labelledby="profH">
+      <h2 class="eyebrow" id="profH">Profiles</h2>
+      <label class="search"><span class="sr">Filter profiles</span><input id="filter" class="input" type="search" placeholder="Filter profiles"></label>
+      <div class="acts">
+        <button type="button" class="btn" id="pNew" title="New profile">New</button>
+        <button type="button" class="btn" id="pDup" title="Duplicate the editor as a new profile">Duplicate</button>
+        <button type="button" class="btn" id="pRen" title="Rename the open saved profile">Rename</button>
+        <button type="button" class="btn" id="pDel" title="Delete the open saved profile">Delete</button>
+        <button type="button" class="btn" id="pImport" title="Import a profile file (.json)">Import</button>
+        <button type="button" class="btn" id="pExport" title="Export the saved file of the open profile">Export</button>
+      </div>
+      <form class="rename" id="renForm" hidden>
+        <label class="field">New name<input id="renName" class="input" maxlength="40" autocomplete="off"></label>
+        <p class="err" id="renErr" role="alert"></p>
+        <div class="row">
+          <button type="submit" class="btn primary">Rename</button>
+          <button type="button" class="btn ghost" id="renCancel">Cancel</button>
+        </div>
+      </form>
+      <input id="pimp" type="file" accept=".json,application/json" hidden>
+      <ul class="plist" id="plist"></ul>
+    </section>
+
+    <section class="card col" aria-labelledby="devH">
+      <h2 class="eyebrow" id="devH">Device</h2>
+      <dl class="facts" id="facts"></dl>
+      <p class="muted" id="devNote" hidden></p>
+      <h2 class="eyebrow">Firmware</h2>
+      <div class="fw"><span class="muted">Current</span><strong id="fwCur">—</strong></div>
+      <p class="muted" id="fwLine" hidden></p>
+      <label class="field">Updater path (optional)<input id="fwpath" class="input" type="text" placeholder="Empty: search Downloads, Desktop and Program Files"></label>
+      <div class="row">
+        <button type="button" class="btn" id="fwLaunch">Launch updater</button>
+        <button type="button" class="btn" id="fwRelease">I've finished the update</button>
+      </div>
+      <p class="muted">DeerKB does not flash firmware. DrunkDeer's updater does; DeerKB only releases the keyboard to it.</p>
+    </section>
+  </aside>
+
+  <section class="pane center" aria-label="Keyboard editor">
+    <div class="card profile-bar">
+      <label class="field">Profile name<input id="pname" class="input" maxlength="40" placeholder="Name this profile"></label>
+      <button type="button" class="btn primary" id="pSave">Save profile</button>
+      <p class="muted" id="presetNote" hidden>Built-in preset. Duplicate it to make an editable copy.</p>
+    </div>
+    <p class="notice" id="offline" hidden>Connect your A75 to edit. Profiles still work.</p>
+
+    <section class="card col" id="boardCard" aria-label="Keyboard board">
+      <div class="toolbar">
+        <div class="seg" role="group" aria-label="Quick select">
+          <button type="button" class="chip-btn" data-group="wasd">WASD</button>
+          <button type="button" class="chip-btn" data-group="numerals">Numerals</button>
+          <button type="button" class="chip-btn" data-group="character">Characters</button>
+        </div>
+        <span class="sel-summary" id="selSum" aria-live="polite"></span>
+        <span class="grow"></span>
+        <button type="button" class="btn ghost" id="selAll">Select all</button>
+        <button type="button" class="btn ghost" id="selClear">Clear</button>
+        <button type="button" class="btn" id="showVals" aria-pressed="false">Show values</button>
+      </div>
+      <div class="board-wrap"><div class="canvas" id="canvas"></div></div>
+    </section>
+
+    <section class="card col" id="livePanel" aria-labelledby="liveH">
+      <div class="row between">
+        <h2 class="eyebrow" id="liveH">Live depth</h2>
+        <button type="button" class="btn primary" id="liveBtn">Start live view</button>
+      </div>
+      <p class="muted" id="liveText"></p>
+      <div class="scale"><span>0 mm</span><span class="bar" aria-hidden="true"></span><span id="liveMax"></span></div>
+    </section>
+  </section>
+
+  <aside class="card pane inspector" id="inspector" aria-label="Inspector">
+    <div class="seg" role="group" aria-label="Inspector section">
+      <button type="button" data-section="actuation" aria-pressed="true">Actuation</button>
+      <button type="button" data-section="lighting" aria-pressed="false">Lighting</button>
+      <button type="button" data-section="remap" aria-pressed="false">Remap</button>
+    </div>
+    <p class="target" id="target"></p>
+
+    <section class="col" id="p-actuation">
+      <div class="row between">
+        <label class="field-label" for="act">Actuation point</label>
+        <span class="mm"><input id="act" class="input num" type="number" step="0.1"><span class="muted">mm</span></span>
+      </div>
+      <label><span class="sr">Actuation point slider</span><input id="actR" type="range"></label>
+      <label class="switch"><span>Rapid trigger</span><input id="rt" type="checkbox" role="switch"></label>
+      <div class="grid2" id="rtFields" hidden>
+        <label class="field">Downstroke (mm)<input id="down" class="input" type="number" step="0.1"></label>
+        <label class="field">Upstroke (mm)<input id="up" class="input" type="number" step="0.1"></label>
+      </div>
+      <label class="switch"><span>Turbo</span><input id="turbo" type="checkbox" role="switch"></label>
+      <label class="field">Scale
+        <select id="scale" class="input">
+          <option value="auto">auto</option>
+          <option value="standard">standard (0.1 mm)</option>
+          <option value="kun">kun (0.01 mm)</option>
+        </select>
+      </label>
+      <div class="row">
+        <button type="button" class="btn" id="setPerf">Set on selection</button>
+        <button type="button" class="btn primary" id="applyPerf">Apply actuation</button>
+      </div>
+      <p class="muted">Set on selection changes the editor only. Apply sends actuation to the keyboard.</p>
+    </section>
+
+    <section class="col" id="p-lighting" hidden>
+      <label class="field">Effect<select id="effect" class="input"></select></label>
+      <label class="field">Brightness
+        <span class="range-out"><input id="bright" type="range" min="0" max="9"><output id="brightOut"></output></span>
+      </label>
+      <label class="field">Speed
+        <span class="range-out"><input id="speed" type="range" min="0" max="9"><output id="speedOut"></output></span>
+      </label>
+      <div class="col">
+        <span class="field-label" id="swLabel">Paint colour</span>
+        <div class="swatches" id="swatches" role="group" aria-labelledby="swLabel"></div>
+        <div class="row">
+          <label class="field">Custom colour<input id="paint" type="color" value="#ffffff"></label>
+          <button type="button" class="btn" id="paintBtn">Paint selected keys</button>
+        </div>
+      </div>
+      <p class="muted">Per-key colours are used only by Custom light. Only keys with an LED can be painted.</p>
+      <div class="row"><button type="button" class="btn primary" id="applyLight">Apply lighting</button></div>
+    </section>
+
+    <section class="col" id="p-remap" hidden>
+      <div class="field">
+        <span id="layerLabel">Layer</span>
+        <div class="seg" role="group" aria-labelledby="layerLabel">
+          <button type="button" data-layer="0" aria-pressed="true">Default</button>
+          <button type="button" data-layer="1" aria-pressed="false">Fn</button>
+          <button type="button" data-layer="2" aria-pressed="false">Fn2</button>
+        </div>
+      </div>
+      <label class="field">Sends<select id="hidSel" class="input"></select></label>
+      <label class="field">HID code (0–255)
+        <span class="mm"><input id="hid" class="input num" type="number" min="0" max="255"><span class="muted" id="hidHex"></span></span>
+      </label>
+      <div class="row">
+        <button type="button" class="btn" id="setRemap">Set on selection</button>
+        <button type="button" class="btn ghost" id="resetRemap">Reset layer</button>
+      </div>
+      <div class="row"><button type="button" class="btn primary" id="applyRemap">Apply remap</button></div>
+      <p class="muted" id="lockedNote"></p>
+      <p class="muted">Set on selection changes the chosen layer in the editor. Fn cannot be remapped.</p>
+    </section>
+  </aside>
+</div>
+
+<footer class="footer">
+  <div class="foot-status">
+    <span class="dirty" id="dirty" data-state="none"></span>
+    <span class="muted" id="reason"></span>
+  </div>
+  <span class="grow"></span>
+  <button type="button" class="btn primary" id="writeAll">Write all to keyboard</button>
+</footer>
+
+<dialog id="dlg" aria-labelledby="dlgTitle">
+  <form method="dialog">
+    <h2 id="dlgTitle"></h2>
+    <p id="dlgText"></p>
+    <div class="actions">
+      <button type="submit" value="cancel" class="btn" id="dlgCancel">Cancel</button>
+      <button type="submit" value="ok" class="btn primary" id="dlgOk">OK</button>
+    </div>
+  </form>
+</dialog>
+<div class="toasts" id="toasts"></div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const enc = encodeURIComponent;
+const clone = (v) => structuredClone(v);
+const hex = (v) => v.toString(16).padStart(2, '0').toUpperCase();
+const LINK = { 55: 76, 76: 55 }; // the two halves of ISO Enter always select together
+const SECTIONS = ['actuation', 'lighting', 'remap'];
+const THEME_KEY = 'deerkb-theme';
+// Same rule as cleanName in profile.go, so a name accepted here is accepted by the server.
+const NAME_RE = /^[A-Za-z0-9_()-]([A-Za-z0-9 _()-]{0,38}[A-Za-z0-9_()-])?$/;
+const KIND_LABEL = { off: 'Off', custom: 'Custom', mode: 'Modes' };
+const TOAST_LABEL = { ok: 'Done', info: 'Note', error: 'Error' };
+const SWATCHES = [
+  ['White', '#ffffff'], ['Red', '#ff3b30'], ['Orange', '#ff7a1a'], ['Yellow', '#ffd60a'],
+  ['Green', '#34c759'], ['Cyan', '#32c5ff'], ['Blue', '#0a84ff'], ['Purple', '#bf5af2'],
+];
+// Common USB HID usages for the remap target list.
+const HID_USAGES = [
+  ['None', 0x00],
+  ...[...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'].map((c, i) => [c, 0x04 + i]),
+  ...[...'1234567890'].map((c, i) => [c, 0x1e + i]),
+  ['Enter', 0x28], ['Esc', 0x29], ['Backspace', 0x2a], ['Tab', 0x2b], ['Space', 0x2c], ['Caps Lock', 0x39],
+  ['-', 0x2d], ['=', 0x2e], ['[', 0x2f], [']', 0x30], [';', 0x33], ["'", 0x34], [',', 0x36], ['.', 0x37], ['/', 0x38],
+  ...Array.from({ length: 12 }, (_, i) => [`F${i + 1}`, 0x3a + i]),
+  ['Home', 0x4a], ['Page Up', 0x4b], ['Delete', 0x4c], ['End', 0x4d], ['Page Down', 0x4e],
+  ['Right', 0x4f], ['Left', 0x50], ['Down', 0x51], ['Up', 0x52],
+  ['Left Ctrl', 0xe0], ['Left Shift', 0xe1], ['Left Alt', 0xe2], ['Left Win', 0xe3],
+];
+
+// S is the whole UI state. S.ed is the editor; S.saved is its last saved or loaded copy.
+const S = {
+  layout: null, status: null, netErr: '',
+  presets: [], profiles: [], filter: '', // presets are read-only; profiles are the saved names
+  current: null, ed: null, saved: null,
+  sel: new Set(), section: 'actuation', layer: 0, showValues: false,
+  keyEls: [],
+  live: false, liveTimer: 0, inView: true, depth: {},
+  fwBefore: null,
+  theme: 'dark',
+};
+
+async function api(method, path, body) {
+  const opt = { method, headers: {} };
+  if (method !== 'GET') opt.headers['X-DeerKB'] = '1';
+  if (typeof body === 'string') {
+    opt.headers['Content-Type'] = 'application/json';
+    opt.body = body;
+  } else if (body !== undefined) {
+    opt.headers['Content-Type'] = 'application/json';
+    opt.body = JSON.stringify(body);
+  }
+  const r = await fetch(path, opt);
+  const data = (r.headers.get('Content-Type') || '').includes('json') ? await r.json() : await r.text();
+  if (!r.ok) {
+    const err = new Error((data && data.error) || r.statusText);
+    err.status = r.status;
+    throw err;
+  }
+  return data;
+}
+
+// toast shows a result. Error text comes from the API and is shown as is.
+function toast(msg, kind = 'ok') {
+  const t = document.createElement('div');
+  t.className = `toast ${kind}`;
+  t.setAttribute('role', kind === 'error' ? 'alert' : 'status');
+  const k = document.createElement('strong');
+  k.textContent = TOAST_LABEL[kind];
+  t.append(k, document.createTextNode(msg));
+  $('#toasts').append(t);
+  setTimeout(() => t.remove(), kind === 'error' ? 8000 : 4000);
+}
+
+// confirmBox opens the dialog and resolves true only when the user picks the action button.
+function confirmBox(title, text, okLabel, destructive = false) {
+  const dlg = $('#dlg');
+  $('#dlgTitle').textContent = title;
+  $('#dlgText').textContent = text;
+  $('#dlgOk').textContent = okLabel;
+  $('#dlgOk').className = destructive ? 'btn destructive' : 'btn primary';
+  dlg.returnValue = '';
+  dlg.showModal();
+  $('#dlgCancel').focus();
+  return new Promise((resolve) => dlg.addEventListener('close', () => resolve(dlg.returnValue === 'ok'), { once: true }));
+}
+
+// ---- state helpers ----
+
+const P = () => S.status?.precision ?? { min: 0.2, max: 3.3, unit_mm: 0.1 };
+const isLED = (s) => S.layout.leds.includes(s);
+const canEdit = () => !!S.status?.connected;
+const canWrite = () => canEdit() && !!S.status.writable;
+const fwText = (v) => (v ? `FW ${v}` : '—');
+const selCount = () => [...S.sel].filter((s) => s !== 76).length; // ISO Enter's two halves count as one key
+const isPreset = (name) => S.presets.includes(name);
+
+// lum is the perceived brightness of a #rrggbb colour, used to pick black or white text.
+function lum(c) {
+  const n = parseInt(c.slice(1), 16);
+  return (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
+}
+
+function blank() {
+  const n = S.layout.keySlots;
+  return {
+    actuation: Array(n).fill(2),
+    downstroke: Array(n).fill(2),
+    upstroke: Array(n).fill(2),
+    rapid_trigger: false,
+    turbo: false,
+    scale: 'auto',
+    lighting: { effect: 'off', brightness: 9, speed: 4, colors: Array(n).fill('#ffffff') },
+    remap: clone(S.layout.defaultRemap),
+  };
+}
+
+function perfBody() {
+  const { actuation, downstroke, upstroke, rapid_trigger, turbo, scale } = S.ed;
+  return { actuation, downstroke, upstroke, rapid_trigger, turbo, scale };
+}
+
+// changeCount counts the values that differ from the saved copy, for the footer.
+function changeCount() {
+  const a = S.ed;
+  const b = S.saved;
+  const diff = (x, y) => x.filter((v, i) => v !== y[i]).length;
+  let n = diff(a.actuation, b.actuation) + diff(a.downstroke, b.downstroke) + diff(a.upstroke, b.upstroke);
+  n += diff(a.lighting.colors, b.lighting.colors);
+  a.remap.forEach((row, l) => { n += diff(row, b.remap[l]); });
+  for (const k of ['rapid_trigger', 'turbo', 'scale']) n += a[k] !== b[k];
+  for (const k of ['effect', 'brightness', 'speed']) n += a.lighting[k] !== b.lighting[k];
+  return n;
+}
+
+// loadEditor replaces the editor with a profile, or with a blank one when name is null.
+function loadEditor(e, name) {
+  const base = blank();
+  S.ed = { ...base, ...e, lighting: { ...base.lighting, ...(e.lighting || {}) }, remap: e.remap || base.remap };
+  if (S.ed.lighting.colors?.length !== S.layout.keySlots) S.ed.lighting.colors = base.lighting.colors;
+  S.current = name;
+  S.saved = clone(S.ed);
+  $('#pname').value = name ?? '';
+  closeRename();
+}
+
+// ---- status and device ----
+
+function setStatus(s) {
+  S.status = s;
+  S.netErr = '';
+  const p = s.precision;
+  for (const el of document.querySelectorAll('#act, #actR, #down, #up')) {
+    el.min = p.min;
+    el.max = p.max;
+    el.step = String(p.unit_mm || 0.1);
+  }
+  renderTop();
+  renderDevice();
+  renderLive();
+  renderFooter();
+  renderAccess();
+}
+
+async function refreshStatus() {
+  try {
+    setStatus(await api('GET', '/api/status'));
+  } catch (e) {
+    S.netErr = e.message;
+    renderTop();
+  }
+}
+
+function connState() {
+  if (S.netErr) return { text: 'App not responding', tone: 'bad' };
+  const s = S.status;
+  if (!s) return { text: 'Checking…', tone: 'info' };
+  if (s.simulated) return { text: 'Simulated', tone: 'info' };
+  return s.connected ? { text: 'Connected', tone: 'ok' } : { text: 'Not found', tone: 'bad' };
+}
+
+function writeReason() {
+  const s = S.status;
+  if (!s) return 'Checking the keyboard…';
+  if (!s.connected) return 'Connect your A75 to write. Profiles still work.';
+  if (!s.writable) return `Read-only: ${s.note || s.error || 'this keyboard cannot be written to'}.`;
+  return '';
+}
+
+function renderTop() {
+  const s = S.status;
+  $('#chip').textContent = s?.connected ? `${s.model || 'Keyboard'}${s.variant ? ' ' + s.variant : ''} · FW ${s.firmware || '—'}` : 'No keyboard';
+  const c = connState();
+  $('#connText').textContent = c.text;
+  $('#connDot').dataset.tone = c.tone;
+}
+
+function renderDevice() {
+  const s = S.status;
+  const rows = s
+    ? [
+      ['Model', s.model ? `${s.model}${s.variant ? ' ' + s.variant : ''}` : '—'],
+      ['Firmware', fwText(s.firmware)],
+      ['Precision', `${s.precision.mode}, ${s.precision.unit_mm} mm steps, ${s.precision.min}–${s.precision.max} mm`],
+      ['Writable', s.writable ? 'Yes' : 'No'],
+      ['Simulated', s.simulated ? 'Yes' : 'No'],
+    ]
+    : [['Status', 'Checking…']];
+  $('#facts').replaceChildren(...rows.flatMap(([k, v]) => {
+    const dt = document.createElement('dt');
+    dt.textContent = k;
+    const dd = document.createElement('dd');
+    dd.textContent = v;
+    return [dt, dd];
+  }));
+  const note = s?.note || s?.error || '';
+  $('#devNote').textContent = note;
+  $('#devNote').hidden = !note;
+  $('#fwCur').textContent = fwText(s?.firmware);
+  $('#fwLine').hidden = S.fwBefore === null;
+  $('#fwLine').textContent = `Before update: ${fwText(S.fwBefore)} · now: ${fwText(s?.firmware)}`;
+}
+
+// renderAccess locks editing while disconnected and write buttons while the keyboard cannot take writes.
+function renderAccess() {
+  const edit = canEdit();
+  for (const id of ['#boardCard', '#livePanel', '#inspector']) $(id).inert = !edit;
+  $('#offline').hidden = !S.status || edit;
+  const write = canWrite();
+  const why = writeReason();
+  for (const id of ['#writeAll', '#applyPerf', '#applyLight', '#applyRemap']) {
+    $(id).disabled = !write;
+    $(id).title = write ? '' : why;
+  }
+}
+
+function renderFooter() {
+  const n = changeCount();
+  const dirty = $('#dirty');
+  dirty.dataset.state = n ? 'dirty' : S.current ? 'clean' : 'none';
+  dirty.textContent = n
+    ? `${n} unsaved change${n === 1 ? '' : 's'}`
+    : S.current ? `All changes saved to profile “${S.current}”` : 'No profile open. Save to keep these values.';
+  $('#reason').textContent = writeReason();
+}
+
+// ---- profiles ----
+
+async function loadProfiles() {
+  try {
+    const r = await api('GET', '/api/profiles');
+    S.presets = r.presets || [];
+    S.profiles = r.saved || [];
+    touch();
+  } catch (e) {
+    toast(`Could not list profiles: ${e.message}`, 'error');
+  }
+}
+
+function renderProfiles() {
+  const q = S.filter.trim().toLowerCase();
+  const presets = S.presets.filter((n) => n.toLowerCase().includes(q));
+  const saved = S.profiles.filter((n) => n.toLowerCase().includes(q));
+  $('#plist').replaceChildren(
+    ...profileGroup('Presets', presets, 'No presets match.'),
+    ...profileGroup('Saved', saved, q ? 'No saved profiles match.' : 'None yet. Save a profile or import a file.'),
+  );
+  const preset = isPreset(S.current);
+  $('#pSave').disabled = preset;
+  $('#pSave').title = preset ? 'Built-in presets are read-only. Duplicate it to edit.' : '';
+  $('#presetNote').hidden = !preset;
+  $('#pRen').disabled = !S.current || preset;
+  $('#pDel').disabled = !S.current || preset;
+  $('#pExport').disabled = !S.current;
+  if (!S.current || preset) closeRename();
+}
+
+// profileGroup returns a heading and its names, or a note when the group is empty.
+function profileGroup(title, names, emptyText) {
+  const head = document.createElement('li');
+  head.className = 'pgroup';
+  head.textContent = title;
+  if (names.length) return [head, ...names.map(profileItem)];
+  const note = document.createElement('li');
+  note.className = 'pnote';
+  note.textContent = emptyText;
+  return [head, note];
+}
+
+function profileItem(name) {
+  const li = document.createElement('li');
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = 'prof';
+  const open = name === S.current;
+  if (open) b.setAttribute('aria-current', 'true');
+  const text = document.createElement('span');
+  text.className = 'prof-name';
+  text.textContent = name;
+  b.append(text);
+  if (open && changeCount()) {
+    const dot = document.createElement('span');
+    dot.className = 'unsaved';
+    dot.title = 'Unsaved changes';
+    const sr = document.createElement('span');
+    sr.className = 'sr';
+    sr.textContent = ' (unsaved changes)';
+    b.append(dot, sr);
+  }
+  b.onclick = () => openProfile(name);
+  li.append(b);
+  return li;
+}
+
+function profileName() {
+  const name = $('#pname').value.trim();
+  if (NAME_RE.test(name)) return name;
+  toast('Name must be 1–40 letters, digits, spaces, _ ( ) or -.', 'error');
+  return '';
+}
+
+// freeName returns base + " copy" (or " copy N") that no saved profile or preset uses.
+function freeName(base) {
+  for (let n = 1; ; n++) {
+    const tail = n === 1 ? ' copy' : ` copy ${n}`;
+    const name = base.slice(0, 40 - tail.length).trimEnd() + tail;
+    if (!S.profiles.includes(name) && !isPreset(name)) return name;
+  }
+}
+
+// discardOK asks before the editor's unsaved changes are dropped.
+async function discardOK(text) {
+  return changeCount() === 0 || confirmBox('Discard unsaved changes?', text, 'Discard', true);
+}
+
+async function putProfile(name) {
+  await api('PUT', `/api/profiles/${enc(name)}`, S.ed);
+  S.current = name;
+  S.saved = clone(S.ed);
+  $('#pname').value = name;
+  await loadProfiles();
+}
+
+async function openProfile(name) {
+  if (name === S.current || !(await discardOK(`Open ${name}? Changes you have not saved are dropped.`))) return;
+  try {
+    loadEditor(await api('GET', `/api/profiles/${enc(name)}`), name);
+    renderAll();
+    toast(`Opened ${name}. Write all to keyboard to send it.`, 'info');
+  } catch (e) {
+    toast(`Open failed: ${e.message}`, 'error');
+  }
+}
+
+async function newProfile() {
+  if (!(await discardOK('Start a new profile? Changes you have not saved are dropped.'))) return;
+  loadEditor(blank(), null);
+  renderAll();
+  $('#pname').focus();
+}
+
+async function saveProfile() {
+  const name = profileName();
+  if (!name) return;
+  if (isPreset(name)) return toast(`${name} is a built-in preset. Choose another name.`, 'error');
+  if (name !== S.current && S.profiles.includes(name)
+    && !(await confirmBox(`Replace ${name}?`, 'The saved profile is overwritten with the editor’s values.', 'Replace', true))) return;
+  try {
+    await putProfile(name);
+    toast(`Saved ${name}.`);
+  } catch (e) {
+    toast(`Save failed: ${e.message}`, 'error');
+  }
+}
+
+async function duplicateProfile() {
+  const base = $('#pname').value.replace(/[^A-Za-z0-9 _()-]/g, '').trim() || 'Profile';
+  try {
+    const name = freeName(base);
+    await putProfile(name);
+    toast(`Duplicated as ${name}.`);
+  } catch (e) {
+    toast(`Duplicate failed: ${e.message}`, 'error');
+  }
+}
+
+async function deleteProfile() {
+  const name = S.current;
+  if (!name) return;
+  if (!(await confirmBox(`Delete ${name}?`, 'Its saved file is removed. The values stay in the editor as an unsaved draft.', 'Delete', true))) return;
+  try {
+    await api('DELETE', `/api/profiles/${enc(name)}`);
+    S.current = null;
+    S.saved = clone(S.ed);
+    $('#pname').value = name;
+    toast(`Deleted ${name}.`);
+    await loadProfiles();
+  } catch (e) {
+    toast(`Delete failed: ${e.message}`, 'error');
+  }
+}
+
+// startRename opens the inline rename field for the open saved profile.
+function startRename() {
+  $('#renName').value = S.current;
+  $('#renErr').textContent = '';
+  $('#renForm').hidden = false;
+  $('#renName').focus();
+  $('#renName').select();
+}
+
+function closeRename() {
+  $('#renForm').hidden = true;
+  $('#renErr').textContent = '';
+}
+
+// renameProfile renames the open saved profile. The server answers 409 for a taken or read-only name, 400 for a bad one.
+async function renameProfile(e) {
+  e.preventDefault();
+  const from = S.current;
+  const to = $('#renName').value.trim();
+  if (to === from) return closeRename();
+  if (!NAME_RE.test(to)) {
+    $('#renErr').textContent = 'Use 1–40 letters, digits, spaces, _ ( ) or -.';
+    return;
+  }
+  try {
+    const r = await api('POST', `/api/profiles/${enc(from)}/rename`, { name: to });
+    S.current = r.renamed;
+    $('#pname').value = r.renamed;
+    closeRename();
+    await loadProfiles();
+    renderFooter();
+    toast(`Renamed to ${r.renamed}.`);
+  } catch (err) {
+    $('#renErr').textContent = err.status === 409 ? 'That name is taken, or this profile is read-only.'
+      : err.status === 400 ? 'Use 1–40 letters, digits, spaces, _ ( ) or -.'
+        : `Rename failed: ${err.message}`;
+  }
+}
+
+// exportProfile downloads the saved file, which is what the server sends.
+function exportProfile() {
+  const a = document.createElement('a');
+  a.href = `/api/profiles/${enc(S.current)}/export`;
+  a.click();
+}
+
+async function importFile(e) {
+  const input = e.target;
+  const f = input.files[0];
+  if (!f) return;
+  try {
+    const r = await api('POST', '/api/profiles/import', await f.text());
+    toast(`Imported ${r.saved.length} profile${r.saved.length === 1 ? '' : 's'}.`);
+    await loadProfiles();
+  } catch (err) {
+    toast(`Import failed: ${err.message}`, 'error');
+  }
+  input.value = '';
+}
+
+// ---- board ----
+
+// SHORT_LEGEND is display only: titles and aria labels keep the real key name.
+const SHORT_LEGEND = {
+  Insert: 'Ins', Delete: 'Del', Escape: 'Esc', Backspace: 'Bksp', 'Page Up': 'PgUp', PageUp: 'PgUp',
+  'Page Down': 'PgDn', PageDown: 'PgDn', 'Caps Lock': 'Caps', CapsLock: 'Caps',
+  'Left Shift': 'Shift', 'Right Shift': 'Shift', 'Left Ctrl': 'Ctrl', 'Right Ctrl': 'Ctrl',
+  'Left Alt': 'Alt', 'Right Alt': 'Alt', 'Left Win': 'Win', 'Right Win': 'Win', Spacebar: 'Space',
+};
+
+// layoutBoard sizes the board to the container: one key unit is the container width over the widest row.
+function layoutBoard() {
+  const canvas = $('#canvas');
+  const w = canvas.clientWidth;
+  if (!w) return;
+  const cols = Math.max(...S.layout.keys.map((k) => k.x + k.w));
+  const rows = Math.max(...S.layout.keys.map((k) => k.y)) + 1;
+  const u = w / cols;
+  canvas.style.setProperty('--u', `${u}px`);
+  canvas.style.height = `${u * rows}px`;
+  S.keyEls.forEach(({ k, b }) => fitLegend(k, b, u));
+}
+
+// fitLegend shrinks a legend until it fits its key; it never clips.
+const measureCtx = document.createElement('canvas').getContext('2d');
+function fitLegend(k, b, u) {
+  const el = b.querySelector('.legend');
+  const avail = k.w * u - 12; // button width less 3px padding and 1px border on each side
+  measureCtx.font = `600 100px ${getComputedStyle(el).fontFamily}`;
+  const ratio = measureCtx.measureText(el.textContent).width / 100 || 1;
+  el.style.fontSize = `${Math.min(Math.max(9, u * 0.3), avail / ratio)}px`;
+}
+
+function buildBoard() {
+  for (const k of S.layout.keys) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'key';
+    b.style.left = `calc(var(--u) * ${k.x} + 2px)`;
+    b.style.top = `calc(var(--u) * ${k.y} + 2px)`;
+    b.style.width = `calc(var(--u) * ${k.w} - 4px)`;
+    const pip = document.createElement('span');
+    pip.className = 'pip';
+    const legend = document.createElement('span');
+    legend.className = 'legend';
+    legend.textContent = SHORT_LEGEND[k.legend] ?? k.legend;
+    b.append(pip, legend, document.createElement('small'));
+    b.onclick = () => toggleKey(k.slot);
+    $('#canvas').append(b);
+    S.keyEls.push({ k, b });
+  }
+}
+
+function keyEditable(k) {
+  if (S.section === 'lighting') return isLED(k.slot);
+  if (S.section === 'remap') return !S.layout.noRemap[k.slot];
+  return true;
+}
+
+function isRemapped(s) {
+  return S.layout.defaultRemap.some((row, l) => S.ed.remap[l][s] !== row[s]);
+}
+
+function valueText(s) {
+  if (S.section === 'actuation') return `${S.ed.actuation[s].toFixed(2)} mm`;
+  if (S.section === 'remap') return `0x${hex(S.ed.remap[S.layer][s])}`;
+  return '';
+}
+
+function paintKey({ k, b }) {
+  const s = k.slot;
+  const depth = S.live ? S.depth[s] : undefined;
+  const remapped = isRemapped(s);
+  const locked = !keyEditable(k);
+  const why = locked ? (S.section === 'lighting' ? 'no LED' : 'not remappable') : '';
+  const label = `${k.legend}, slot ${s}${remapped ? ', remapped' : ''}${why ? ', ' + why : ''}`;
+  b.disabled = locked;
+  b.title = label;
+  b.setAttribute('aria-label', label);
+  b.setAttribute('aria-pressed', String(S.sel.has(s)));
+  b.querySelector('.pip').hidden = !remapped;
+  b.style.background = '';
+  b.style.color = '';
+  if (depth !== undefined) {
+    const pct = Math.min(100, (depth / P().max) * 100);
+    b.style.background = `color-mix(in srgb, var(--accent) ${pct}%, var(--key))`;
+    if (pct >= 55) b.style.color = 'var(--accent-ink)';
+  } else if (S.section === 'lighting' && isLED(s)) {
+    const c = S.ed.lighting.colors[s];
+    b.style.background = c;
+    b.style.color = lum(c) > 0.5 ? '#000' : '#fff';
+  }
+  b.querySelector('small').textContent = depth !== undefined ? `${depth.toFixed(2)} mm` : S.showValues ? valueText(s) : '';
+}
+
+function paintBoard() {
+  S.keyEls.forEach(paintKey);
+}
+
+function renderToolbar() {
+  const n = selCount();
+  $('#selSum').textContent = n ? `${n} key${n === 1 ? '' : 's'} selected` : 'No keys selected: changes apply to all keys';
+  $('#showVals').setAttribute('aria-pressed', String(S.showValues));
+}
+
+function setSel(set) {
+  S.sel = set;
+  renderSelection();
+}
+
+function renderSelection() {
+  syncInspector();
+  paintBoard();
+  renderToolbar();
+}
+
+// toggleKey flips one key; ISO Enter's two halves always move together.
+function toggleKey(s) {
+  const on = !S.sel.has(s);
+  const next = new Set(S.sel);
+  for (const i of [s, LINK[s]]) {
+    if (i === undefined) continue;
+    if (on) next.add(i);
+    else next.delete(i);
+  }
+  setSel(next);
+}
+
+// targets is the selection, or every key when nothing is selected.
+function targets() {
+  return S.sel.size ? [...S.sel] : S.layout.keys.map((k) => k.slot);
+}
+
+function setSection(name) {
+  S.section = name;
+  document.querySelectorAll('[data-section]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.section === name)));
+  for (const s of SECTIONS) $(`#p-${s}`).hidden = s !== name;
+  paintBoard();
+}
+
+function setLayer(l) {
+  S.layer = l;
+  document.querySelectorAll('[data-layer]').forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.layer) === l)));
+  syncRemap();
+  paintBoard();
+}
+
+// ---- inspector ----
+
+function setRange(id, v) {
+  $(id).value = v;
+  $(`${id}Out`).textContent = v;
+}
+
+// syncInspector fills the controls from the first selected key. Only selection changes call it,
+// so typing in a field is never overwritten by the status poll.
+function syncInspector() {
+  const ref = S.sel.size ? [...S.sel][0] : 0;
+  const ed = S.ed;
+  $('#act').value = ed.actuation[ref];
+  $('#actR').value = ed.actuation[ref];
+  $('#down').value = ed.downstroke[ref];
+  $('#up').value = ed.upstroke[ref];
+  $('#rt').checked = ed.rapid_trigger;
+  $('#rtFields').hidden = !ed.rapid_trigger;
+  $('#turbo').checked = ed.turbo;
+  $('#scale').value = ed.scale || 'auto';
+  $('#effect').value = ed.lighting.effect;
+  setRange('#bright', ed.lighting.brightness);
+  setRange('#speed', ed.lighting.speed);
+  syncRemap();
+  $('#target').textContent = selCount() ? `Applies to ${selCount()} selected key${selCount() === 1 ? '' : 's'}.` : 'Applies to all keys.';
+}
+
+function syncRemap() {
+  const ref = S.sel.size ? [...S.sel][0] : 0;
+  setHidValue(S.ed.remap[S.layer][ref]);
+}
+
+// setHidValue selects a HID usage, or adds a custom entry for a code that is not in the list.
+function setHidValue(v) {
+  const sel = $('#hidSel');
+  sel.querySelector('option[data-custom]')?.remove();
+  if (!sel.querySelector(`option[value="${v}"]`)) {
+    const o = new Option(`Custom (0x${hex(v)})`, v);
+    o.dataset.custom = '';
+    sel.append(o);
+  }
+  sel.value = String(v);
+  $('#hid').value = String(v);
+  $('#hidHex').textContent = `0x${hex(v)}`;
+}
+
+function setActuation() {
+  const [a, d, u] = [$('#act'), $('#down'), $('#up')].map((el) => parseFloat(el.value));
+  const { min, max } = P();
+  const ok = (v) => Number.isFinite(v) && v >= min && v <= max;
+  if (![a, d, u].every(ok)) return toast(`Values must be between ${min} and ${max} mm.`, 'error');
+  for (const s of targets()) {
+    S.ed.actuation[s] = a;
+    S.ed.downstroke[s] = d;
+    S.ed.upstroke[s] = u;
+  }
+  touch();
+}
+
+function paintSelected() {
+  if (!S.sel.size) return toast('Select keys first.', 'error');
+  const col = $('#paint').value;
+  for (const s of S.sel) if (isLED(s)) S.ed.lighting.colors[s] = col;
+  touch();
+}
+
+function setRemapKeys() {
+  const v = Number($('#hidSel').value);
+  const t = [...S.sel].filter((s) => !S.layout.noRemap[s]);
+  if (!t.length) return toast('Select keys first. Fn cannot be remapped.', 'error');
+  for (const s of t) S.ed.remap[S.layer][s] = v;
+  touch();
+}
+
+function resetLayer() {
+  for (const { slot } of S.layout.keys) {
+    if (!S.layout.noRemap[slot]) S.ed.remap[S.layer][slot] = S.layout.defaultRemap[S.layer][slot];
+  }
+  syncRemap();
+  touch();
+  toast(`Layer ${S.layer === 0 ? 'Default' : 'Fn' + (S.layer === 2 ? '2' : '')} reset in the editor. Apply remap sends it.`, 'info');
+}
+
+// ---- writes ----
+
+// send posts one write and turns its hardware steps into one message.
+async function send(label, path, body) {
+  try {
+    const steps = (await api('POST', path, body)).steps || [];
+    const failed = steps.filter((s) => !s.ok).map((s) => s.name);
+    if (failed.length) return { ok: false, msg: `${label} not written: ${failed.join(', ')}` };
+    return { ok: true, msg: steps.filter((s) => s.warn).map((s) => `${s.name}: ${s.warn}`).join('; ') };
+  } catch (e) {
+    return { ok: false, msg: `${label} not written: ${e.message}` };
+  }
+}
+
+async function sendAndReport(label, path, body) {
+  const r = await send(label, path, body);
+  if (!r.ok) return toast(r.msg, 'error');
+  if (r.msg) return toast(r.msg, 'info');
+  toast(`${label} written to keyboard.`);
+}
+
+// writeAll sends actuation, lighting and remap in turn, as the keyboard takes each one.
+async function writeAll() {
+  const parts = [
+    await send('Actuation', '/api/apply', perfBody()),
+    await send('Lighting', '/api/lighting', S.ed.lighting),
+    await send('Remap', '/api/remap', S.ed.remap),
+  ];
+  const bad = parts.filter((r) => !r.ok).map((r) => r.msg);
+  const notes = parts.filter((r) => r.ok && r.msg).map((r) => r.msg);
+  if (bad.length) toast(bad.join('. '), 'error');
+  else if (notes.length) toast(notes.join('; '), 'info');
+  else toast('Written to keyboard: actuation, lighting and remap.');
+}
+
+// ---- live depth ----
+
+async function startLive() {
+  try {
+    await api('POST', '/api/live/start');
+  } catch (e) {
+    return toast(`Live view: ${e.message}`, 'error');
+  }
+  S.live = true;
+  renderLive();
+  pollLive();
+}
+
+async function stopLive() {
+  if (!S.live) return;
+  S.live = false;
+  clearTimeout(S.liveTimer);
+  S.depth = {};
+  renderLive();
+  paintBoard();
+  try {
+    await api('POST', '/api/live/stop');
+  } catch (e) {
+    toast(`Live view: ${e.message}`, 'error');
+  }
+}
+
+// pollLive reads depth every 150 ms, but only while the live panel is on screen.
+function pollLive() {
+  clearTimeout(S.liveTimer);
+  if (S.live && S.inView) S.liveTimer = setTimeout(readDepth, 150);
+}
+
+async function readDepth() {
+  try {
+    const { depth } = await api('GET', '/api/live');
+    if (!S.live) return;
+    S.depth = depth;
+    paintBoard();
+  } catch (e) {
+    toast(`Live view: ${e.message}`, 'error');
+    return stopLive();
+  }
+  pollLive();
+}
+
+function renderLive() {
+  const btn = $('#liveBtn');
+  btn.textContent = S.live ? 'Stop live view' : 'Start live view';
+  btn.className = S.live ? 'btn' : 'btn primary';
+  $('#liveText').textContent = !S.live
+    ? 'Press keys to see how far they are pressed, shown in mm on the board.'
+    : S.inView ? 'Live view on. Keys shade darker the deeper they are pressed.' : 'Live view is paused while this panel is off screen.';
+  $('#liveMax').textContent = `${P().max} mm`;
+}
+
+// ---- firmware ----
+
+async function launchUpdater() {
+  if (S.live) await stopLive();
+  try {
+    await api('POST', '/api/firmware/launch', { path: $('#fwpath').value.trim() });
+    S.fwBefore = S.status?.firmware || 0;
+    toast('Updater opened. The keyboard is released to it.', 'info');
+    await refreshStatus();
+  } catch (e) {
+    toast(`Updater: ${e.message}`, 'error');
+  }
+}
+
+async function finishUpdate() {
+  try {
+    setStatus(await api('POST', '/api/firmware/release'));
+    toast(`Keyboard taken back. Now ${fwText(S.status.firmware)}.`);
+  } catch (e) {
+    toast(`Could not take the keyboard back: ${e.message}`, 'error');
+  }
+}
+
+// ---- app ----
+
+async function quitApp() {
+  const unsaved = changeCount() ? 'Unsaved changes are lost. ' : '';
+  if (!(await confirmBox('Quit DeerKB?', `${unsaved}DeerKB will close.`, 'Quit', true))) return;
+  if (S.live) await stopLive();
+  try {
+    await api('POST', '/api/quit');
+  } catch (e) {
+    // the app exits as it answers; a dropped reply is expected
+  }
+  document.body.textContent = 'DeerKB has closed. You can close this tab.';
+}
+
+function applyTheme(theme) {
+  S.theme = theme;
+  document.documentElement.dataset.theme = theme;
+  const label = `Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`;
+  $('#themeBtn').title = label;
+  $('#themeBtn').setAttribute('aria-label', label);
+  $('#themeIcon').setAttribute('href', theme === 'dark' ? '#i-sun' : '#i-moon');
+}
+
+// initTheme uses the saved choice, else follows the system setting.
+function initTheme() {
+  const dark = matchMedia('(prefers-color-scheme: dark)');
+  applyTheme(localStorage.getItem(THEME_KEY) || (dark.matches ? 'dark' : 'light'));
+  dark.addEventListener('change', (e) => {
+    if (!localStorage.getItem(THEME_KEY)) applyTheme(e.matches ? 'dark' : 'light');
+  });
+}
+
+function buildEffects() {
+  const sel = $('#effect');
+  for (const kind of Object.keys(KIND_LABEL)) {
+    const g = document.createElement('optgroup');
+    g.label = KIND_LABEL[kind];
+    for (const e of S.layout.effects.filter((x) => x.kind === kind)) g.append(new Option(e.label, e.id));
+    sel.append(g);
+  }
+}
+
+function buildHid() {
+  $('#hidSel').append(...HID_USAGES.map(([label, code]) => new Option(`${label} (0x${hex(code)})`, code)));
+  const locked = S.layout.keys.filter((k) => S.layout.noRemap[k.slot]).map((k) => k.legend);
+  $('#lockedNote').textContent = `Locked, not remappable: ${locked.join(', ')}.`;
+}
+
+function buildSwatches() {
+  for (const [name, color] of SWATCHES) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'swatch';
+    b.style.background = color;
+    b.title = name;
+    b.setAttribute('aria-label', `Use ${name}`);
+    b.onclick = () => { $('#paint').value = color; };
+    $('#swatches').append(b);
+  }
+}
+
+function bindRange(id, key) {
+  $(id).oninput = (e) => {
+    S.ed.lighting[key] = Number(e.target.value);
+    $(`${id}Out`).textContent = e.target.value;
+    touch();
+  };
+}
+
+function bindEvents() {
+  $('#themeBtn').onclick = () => applyTheme(S.theme === 'dark' ? 'light' : 'dark');
+  $('#themeBtn').onclick = () => {
+    const next = S.theme === 'dark' ? 'light' : 'dark';
+    localStorage.setItem(THEME_KEY, next);
+    applyTheme(next);
+  };
+  $('#redetect').onclick = async () => {
+    try {
+      setStatus(await api('POST', '/api/redetect'));
+      toast('Keyboard re-read.', 'info');
+    } catch (e) {
+      toast(`Re-read failed: ${e.message}`, 'error');
+    }
+  };
+  $('#quit').onclick = quitApp;
+
+  $('#pNew').onclick = newProfile;
+  $('#pDup').onclick = duplicateProfile;
+  $('#pRen').onclick = startRename;
+  $('#pDel').onclick = deleteProfile;
+  $('#renForm').onsubmit = renameProfile;
+  $('#renCancel').onclick = closeRename;
+  $('#renName').onkeydown = (e) => { if (e.key === 'Escape') closeRename(); };
+  $('#pImport').onclick = () => $('#pimp').click();
+  $('#pimp').onchange = importFile;
+  $('#pExport').onclick = exportProfile;
+  $('#filter').oninput = (e) => { S.filter = e.target.value; renderProfiles(); };
+  $('#pSave').onclick = saveProfile;
+  $('#pname').onkeydown = (e) => { if (e.key === 'Enter' && !$('#pSave').disabled) saveProfile(); };
+
+  $('#selAll').onclick = () => setSel(new Set(S.layout.keys.map((k) => k.slot)));
+  $('#selClear').onclick = () => setSel(new Set());
+  $('#showVals').onclick = () => {
+    S.showValues = !S.showValues;
+    renderToolbar();
+    paintBoard();
+  };
+  document.querySelectorAll('[data-group]').forEach((b) => {
+    b.onclick = () => setSel(new Set(S.layout.groups[b.dataset.group]));
+  });
+
+  document.querySelectorAll('[data-section]').forEach((b) => { b.onclick = () => setSection(b.dataset.section); });
+  document.querySelectorAll('[data-layer]').forEach((b) => { b.onclick = () => setLayer(Number(b.dataset.layer)); });
+
+  $('#act').oninput = (e) => { $('#actR').value = e.target.value; };
+  $('#actR').oninput = (e) => { $('#act').value = e.target.value; };
+  $('#setPerf').onclick = setActuation;
+  $('#applyPerf').onclick = () => sendAndReport('Actuation', '/api/apply', perfBody());
+  $('#rt').onchange = (e) => { S.ed.rapid_trigger = e.target.checked; $('#rtFields').hidden = !e.target.checked; touch(); };
+  $('#turbo').onchange = (e) => { S.ed.turbo = e.target.checked; touch(); };
+  $('#scale').onchange = (e) => { S.ed.scale = e.target.value; touch(); };
+
+  $('#effect').onchange = (e) => { S.ed.lighting.effect = e.target.value; touch(); };
+  bindRange('#bright', 'brightness');
+  bindRange('#speed', 'speed');
+  $('#paintBtn').onclick = paintSelected;
+  $('#applyLight').onclick = () => sendAndReport('Lighting', '/api/lighting', S.ed.lighting);
+
+  $('#hidSel').onchange = (e) => setHidValue(Number(e.target.value));
+  $('#hid').onchange = (e) => {
+    const v = Number(e.target.value);
+    if (Number.isInteger(v) && v >= 0 && v <= 255) setHidValue(v);
+    else toast('HID code must be 0–255.', 'error');
+  };
+  $('#setRemap').onclick = setRemapKeys;
+  $('#resetRemap').onclick = resetLayer;
+  $('#applyRemap').onclick = () => sendAndReport('Remap', '/api/remap', S.ed.remap);
+
+  $('#liveBtn').onclick = () => (S.live ? stopLive() : startLive());
+  document.addEventListener('visibilitychange', () => { if (document.hidden) stopLive(); });
+  window.addEventListener('pagehide', () => {
+    if (S.live) fetch('/api/live/stop', { method: 'POST', keepalive: true, headers: { 'X-DeerKB': '1' } });
+  });
+
+  $('#fwLaunch').onclick = launchUpdater;
+  $('#fwRelease').onclick = finishUpdate;
+  $('#writeAll').onclick = writeAll;
+}
+
+// touch redraws what an editor change affects. Inspector fields are left alone so typing survives.
+function touch() {
+  paintBoard();
+  renderFooter();
+  renderProfiles();
+}
+
+function renderAll() {
+  renderTop();
+  renderDevice();
+  renderProfiles();
+  renderSelection();
+  renderLive();
+  renderFooter();
+  renderAccess();
+}
+
+async function init() {
+  initTheme();
+  S.layout = await api('GET', '/api/layout');
+  buildBoard();
+  new ResizeObserver(layoutBoard).observe($('.board-wrap'));
+  buildEffects();
+  buildHid();
+  buildSwatches();
+  bindEvents();
+  loadEditor(blank(), null);
+  setSection(S.section);
+  setLayer(S.layer);
+  renderAll();
+  new IntersectionObserver(([e]) => {
+    S.inView = e.isIntersecting;
+    renderLive();
+    pollLive();
+  }).observe($('#livePanel'));
+  await Promise.all([refreshStatus(), loadProfiles()]);
+  setInterval(refreshStatus, 2000);
+}
+
+init().catch((e) => toast(e.message, 'error'));
+</script>
+</body>
+</html>

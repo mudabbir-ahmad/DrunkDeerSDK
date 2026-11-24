@@ -1,0 +1,16 @@
+# Build output and local data
+dist/
+*.exe
+*.zip
+*.log
+*.tmp
+*.syso
+
+# Upstream references: separate repos, not part of this project
+ref-cli/
+sdk/
+
+# Editor and OS files
+.vscode/
+.idea/
+Thumbs.db
