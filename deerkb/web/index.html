@@ -7,7 +7,7 @@
 <style>
 :root {
   color-scheme: dark;
-  --bg: #0a0a0c; --panel: #111114; --card: #111114; --raised: #18181c; --hover: #1f1f24; --input: #0d0d10;
+  --bg: #0a0a0c; --panel: #111114; --card: #111114; --raised: #18181c; --hover: #1f1f24; --raised-strong: #26262c; --input: #0d0d10;
   --fg: #ededf0; --mut: #8b8b94;
   --bd: rgba(255,255,255,.08); --bd-strong: rgba(255,255,255,.1); --bd-hover: rgba(255,255,255,.16);
   --key-bd: rgba(255,255,255,.06); --track: #26262c;
@@ -21,7 +21,7 @@
 }
 [data-theme="light"] {
   color-scheme: light;
-  --bg: #f6f6f7; --panel: #ffffff; --card: #ffffff; --raised: #f2f2f4; --hover: #e9e9ec; --input: #ffffff;
+  --bg: #f6f6f7; --panel: #ffffff; --card: #ffffff; --raised: #f2f2f4; --hover: #e9e9ec; --raised-strong: #e2e2e6; --input: #ffffff;
   --fg: #111114; --mut: #6b6b75;
   --bd: rgba(0,0,0,.08); --bd-strong: rgba(0,0,0,.12); --bd-hover: rgba(0,0,0,.2);
   --key-bd: rgba(0,0,0,.06); --track: #e2e2e6;
@@ -39,8 +39,10 @@ body { background: var(--bg); color: var(--fg); font: 400 13px/1.5 var(--sans); 
 strong, b { font-weight: 500; }
 button, input, select { font: inherit; color: inherit; }
 button { cursor: pointer; }
-button:disabled, input:disabled, select:disabled { cursor: not-allowed; opacity: .5; }
+button:disabled { cursor: not-allowed; opacity: .45; }
+input:disabled, select:disabled { cursor: not-allowed; opacity: .5; }
 :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+button:focus-visible { outline: 2px solid var(--info); outline-offset: 2px; }
 [inert] { opacity: .55; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
@@ -67,7 +69,8 @@ button:disabled, input:disabled, select:disabled { cursor: not-allowed; opacity:
 .center > .notice { flex: none; }
 .inspector { grid-column: 3; gap: 8px; }
 .inspector > .seg, .inspector > .target { flex: none; }
-.inspector-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 8px; overflow: auto; }
+/* padding-right keeps the palette's remove button (it sits 5px outside its swatch) inside the scroll box, so no horizontal bar */
+.inspector-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 8px; padding-right: 10px; overflow: auto; scrollbar-width: thin; scrollbar-color: var(--bd-hover) transparent; }
 .footer { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 16px; padding: 8px 16px; background: var(--panel); border-top: 1px solid var(--bd); }
 .foot-status { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .dirty { display: flex; align-items: center; gap: 8px; font-weight: 500; }
@@ -107,26 +110,31 @@ input[type="color"] { width: 40px; height: 32px; padding: 0; border: 1px solid v
 .notice .ic { color: var(--warn); }
 .search { display: block; }
 
-/* buttons */
-.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 32px; padding: 0 14px; border: 1px solid var(--bd-strong); border-radius: 8px; background: var(--raised); color: var(--fg); font-weight: 500; white-space: nowrap; }
+/* buttons: one system. 30px high (32px in the footer), 12px side padding, 6px radius, 13px text.
+   Hover is a background step of about 6%; pressed is a background change only; no shadows, rings or transforms. */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 30px; min-height: 30px; padding: 0 12px; border: 1px solid var(--bd-strong); border-radius: 6px; background: var(--raised); color: var(--fg); font-size: 13px; font-weight: 500; line-height: 1; text-transform: none; white-space: nowrap; box-shadow: none; }
 .btn:hover:not(:disabled) { background: var(--hover); }
+.btn:not(.primary):not(.danger):not(.destructive):not(.ghost):active:not(:disabled) { background: var(--raised-strong); }
+.footer .btn { height: 32px; min-height: 32px; }
 .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
-.btn.primary:hover:not(:disabled) { background: var(--accent-hover); border-color: var(--accent-hover); }
+.btn.primary:hover:not(:disabled) { background: color-mix(in srgb, var(--accent) 92%, var(--fg)); border-color: color-mix(in srgb, var(--accent) 92%, var(--fg)); }
 .btn.ghost { background: transparent; border-color: transparent; color: var(--mut); }
-.btn.ghost:hover:not(:disabled) { background: transparent; color: var(--fg); }
-.btn.destructive { background: var(--bad-fill); border-color: var(--bad-fill); color: #fff; }
-.btn.destructive:hover:not(:disabled) { background: #c42f2f; border-color: #c42f2f; }
-.btn[aria-pressed="true"] { background: var(--hover); border-color: var(--mut); }
-.tb-group { display: flex; align-items: stretch; overflow: hidden; border: 1px solid var(--bd-strong); border-radius: 8px; background: var(--raised); }
-.tb-group .btn { min-height: 32px; padding: 0 12px; border: 0; border-radius: 0; background: transparent; }
+.btn.ghost:hover:not(:disabled) { background: var(--hover); color: var(--fg); }
+/* danger: red text and a border, no solid fill; the fill appears only on hover */
+.btn.danger, .btn.destructive { background: transparent; border-color: var(--bd-strong); color: var(--bad); }
+.btn.danger:hover:not(:disabled), .btn.destructive:hover:not(:disabled) { background: color-mix(in srgb, var(--bad) 12%, transparent); }
+.btn[aria-pressed="true"] { background: var(--raised-strong); border-color: var(--bd-hover); }
+.tb-group { display: flex; align-items: stretch; gap: 4px; overflow: hidden; }
+.tb-group .btn { height: 30px; min-height: 30px; padding: 0 12px; border: 0; border-radius: 6px; background: transparent; }
 .tb-group .btn:hover:not(:disabled) { background: var(--hover); }
-.tb-btn { display: grid; place-items: center; width: 32px; height: 32px; border: 0; border-radius: 0; background: transparent; color: var(--fg); }
+.tb-btn { display: grid; place-items: center; width: 30px; height: 30px; border: 0; border-radius: 6px; background: transparent; color: var(--fg); }
 .tb-btn:hover { background: var(--hover); }
 .acts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
-.seg { display: flex; gap: 2px; padding: 2px; border: 1px solid var(--bd-strong); border-radius: 999px; background: var(--raised); }
-.seg button { flex: 1 1 0; min-width: 0; min-height: 26px; padding: 0 12px; border: 0; border-radius: 999px; background: transparent; color: var(--mut); font-weight: 500; }
-.seg button:hover { color: var(--fg); }
-.seg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
+/* segmented: the same button box; the active segment is a raised surface, not a coloured ring */
+.seg { display: flex; gap: 2px; }
+.seg button { flex: 1 1 0; min-width: 0; height: 30px; min-height: 30px; padding: 0 12px; border: 0; border-radius: 6px; background: transparent; color: var(--mut); font-size: 13px; font-weight: 500; }
+.seg button:hover { background: var(--hover); color: var(--fg); }
+.seg button[aria-pressed="true"] { background: var(--raised-strong); color: var(--fg); }
 .switch { display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; }
 .switch input { appearance: none; position: relative; flex: none; width: 32px; height: 18px; margin: 0; border: 1px solid var(--bd-strong); border-radius: 999px; background: var(--raised); cursor: pointer; }
 .switch input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; border-radius: 50%; background: var(--mut); }
@@ -137,23 +145,23 @@ input[type="color"] { width: 40px; height: 32px; padding: 0; border: 1px solid v
 .swatch:hover { border-color: var(--fg); }
 .swatch[aria-pressed="true"] { border-color: var(--accent); }
 .swatch-wrap { position: relative; min-width: 0; }
-.swatch-x { position: absolute; top: -5px; right: -5px; display: grid; place-items: center; width: 16px; height: 16px; padding: 0; border: 1px solid var(--bd-strong); border-radius: 50%; background: var(--raised); color: var(--fg); font-size: 11px; line-height: 1; }
+.swatch-x { position: absolute; top: -5px; right: -5px; display: grid; place-items: center; width: 16px; height: 16px; padding: 0; border: 1px solid var(--bd-strong); border-radius: 4px; background: var(--raised); box-shadow: none; color: var(--fg); font-size: 11px; line-height: 1; }
 .swatch-x:hover { background: var(--hover); }
 .swatch-x .ic { width: 10px; height: 10px; }
 .cur { flex: none; width: 32px; height: 32px; border: 1px solid var(--bd-strong); border-radius: 8px; }
 .tint-sw { flex: none; width: 18px; height: 18px; border: 1px solid var(--bd-strong); border-radius: 6px; }
 #pickBox .field { flex: 1 1 120px; }
 .fx-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
-.fx { min-height: 32px; padding: 6px 10px; border: 1px solid var(--bd-strong); border-radius: 8px; background: var(--raised); color: var(--fg); text-align: left; overflow-wrap: anywhere; }
+.fx { min-height: 30px; padding: 6px 12px; border: 1px solid var(--bd-strong); border-radius: 6px; background: var(--raised); color: var(--fg); font-size: 13px; text-align: left; overflow-wrap: anywhere; box-shadow: none; }
 .fx:hover:not(:disabled) { background: var(--hover); }
-.fx[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+.fx[aria-pressed="true"] { background: var(--raised-strong); border-color: var(--bd-hover); color: var(--fg); }
 .note { margin: 0; color: var(--mut); font-size: 12px; }
 .btn, .tb-btn, .seg button, .prof, .key, .input, .swatch, .switch input { transition: background-color .15s ease, border-color .15s ease, color .15s ease; }
 
 /* profiles and device */
 /* the profile card takes the height left under the device card; only its list scrolls */
 .side > .profiles { flex: 1 1 0; min-height: 0; }
-.plist { display: flex; flex-direction: column; gap: 2px; flex: 1 1 0; min-height: 0; margin: 0; padding: 0; overflow: auto; list-style: none; }
+.plist { display: flex; flex-direction: column; gap: 2px; flex: 1 1 0; min-height: 0; margin: 0; padding: 0; overflow: auto; list-style: none; scrollbar-width: thin; scrollbar-color: var(--bd-hover) transparent; }
 .prof { position: relative; display: flex; align-items: center; gap: 8px; width: 100%; height: 32px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; color: var(--fg); text-align: left; }
 .prof:hover { background: var(--row-hover); }
 .prof[aria-current="true"] { background: var(--row-on); font-weight: 500; }
@@ -173,7 +181,7 @@ input[type="color"] { width: 40px; height: 32px; padding: 0; border: 1px solid v
 .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .sel-count { color: var(--fg); font-weight: 500; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .sel-count[data-none="true"] { color: var(--mut); font-weight: 400; }
-.board-wrap { container-type: inline-size; flex: 1 1 auto; min-height: 0; overflow: auto; }
+.board-wrap { container-type: inline-size; flex: 1 1 auto; min-height: 0; overflow: auto; scrollbar-width: thin; scrollbar-color: var(--bd-hover) transparent; }
 .canvas { position: relative; width: 100%; max-width: 980px; margin: 0 auto; user-select: none; }
 .key { position: absolute; display: flex; flex-direction: column; align-items: center; height: var(--u); padding: 3px 3px 2px; border: 1px solid var(--key-bd); border-radius: 6px; background: var(--key); color: var(--key-fg); font-size: max(9px, calc(var(--u) * .3)); line-height: 1.1; overflow: hidden; }
 .key:hover:not(:disabled) { border-color: var(--bd-hover); }
@@ -224,8 +232,8 @@ dialog::backdrop { background: rgb(0 0 0 / .6); }
 dialog h2 { margin: 0 0 8px; font-size: 15px; font-weight: 600; }
 dialog p { margin: 0 0 16px; color: var(--mut); }
 .actions { display: flex; justify-content: flex-end; gap: 8px; }
-.toasts { position: fixed; right: 16px; bottom: 72px; z-index: 20; display: flex; flex-direction: column; gap: 8px; width: min(380px, calc(100vw - 32px)); }
-.toast { padding: 10px 12px; border: 1px solid var(--bd-strong); border-left: 2px solid var(--info); border-radius: 12px; background: var(--card); font-size: 13px; overflow-wrap: anywhere; }
+.toasts { position: fixed; top: 56px; left: 50%; transform: translateX(-50%); z-index: 15; display: flex; flex-direction: column; align-items: center; gap: 6px; width: min(380px, calc(100vw - 32px)); pointer-events: none; }
+.toast { padding: 2px 0 2px 10px; border-left: 2px solid var(--info); font-size: 13px; overflow-wrap: anywhere; }
 .toast strong { display: block; font-size: 12px; font-weight: 500; }
 .toast.ok { border-left-color: var(--ok); }
 .toast.error { border-left-color: var(--bad); }
