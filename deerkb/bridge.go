@@ -3,7 +3,10 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
+	"log"
 	"net/http"
+	"runtime/debug"
 	"strings"
 )
 
@@ -120,13 +123,30 @@ func serveInProcess(h http.Handler, method, target string, body []byte) (status 
 }
 
 // rpcBinding is the Go side of the shim's window.rpc: it returns {"status": N, "body": "..."} as JSON text.
+// It never returns a Go error: a failure, or a panic in a handler, is sent back as a 500 reply, so a bad
+// request cannot end the window.
 func rpcBinding(h http.Handler) func(method, target, body string) (string, error) {
-	return func(method, target, body string) (string, error) {
+	return func(method, target, body string) (reply string, err error) {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("panic in rpc %s %s: %v\n%s", method, target, r, debug.Stack())
+				reply = encodeReply(http.StatusInternalServerError, fmt.Sprintf("internal error: %v", r))
+				err = nil
+			}
+		}()
 		status, respBody := serveInProcess(h, method, target, []byte(body))
-		out, err := json.Marshal(struct {
-			Status int    `json:"status"`
-			Body   string `json:"body"`
-		}{status, string(respBody)})
-		return string(out), err
+		return encodeReply(status, string(respBody)), nil
 	}
+}
+
+// encodeReply is the JSON text the shim parses.
+func encodeReply(status int, body string) string {
+	out, err := json.Marshal(struct {
+		Status int    `json:"status"`
+		Body   string `json:"body"`
+	}{status, body})
+	if err != nil {
+		return `{"status":500,"body":"reply could not be encoded"}`
+	}
+	return string(out)
 }

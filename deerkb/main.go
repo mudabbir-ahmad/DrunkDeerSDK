@@ -2,11 +2,13 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
+	"runtime/debug"
 	"syscall"
 	"unsafe"
 
@@ -48,16 +50,48 @@ func main() {
 	}
 
 	kb := NewKeyboard(*sim, log.Printf)
-	go kb.Run()
+	go runLogged("keyboard", kb.Run)
 
 	quit := func() {
+		log.Printf("quit: closing keyboard and exiting")
 		kb.Close()
 		_ = hid.Exit()
 		os.Exit(0)
 	}
 
 	openApp(newMux(kb, store, quit))
+	log.Printf("main: window closed")
 	quit()
+}
+
+// runLogged runs fn and logs a panic. The release build has no console, so a panic's own output
+// would be lost and the process would end with nothing in the log.
+func runLogged(name string, fn func()) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("panic in %s: %v\n%s", name, r, debug.Stack())
+		}
+	}()
+	fn()
+}
+
+// quitBinding is the Go side of the page's quit(). It stops the window's loop, and a panic is logged
+// and returned as an error instead of ending the process.
+func quitBinding(w webview.WebView) func() error {
+	return func() (err error) {
+		defer recoverBinding("quit", &err)
+		log.Printf("quit: page asked to close the window")
+		w.Terminate()
+		return nil
+	}
+}
+
+// recoverBinding turns a panic in a bound function into an error, after logging it with its stack.
+func recoverBinding(name string, err *error) {
+	if r := recover(); r != nil {
+		log.Printf("panic in bound %s: %v\n%s", name, r, debug.Stack())
+		*err = fmt.Errorf("%s failed: %v", name, r)
+	}
 }
 
 // claimSingleInstance returns false when another DeerKB already holds the named mutex. The handle is
@@ -82,6 +116,7 @@ func openApp(h http.Handler) {
 		log.Printf("read page: %v", err)
 		return
 	}
+	log.Printf("window: before New")
 	w := webview.New(false)
 	if w == nil {
 		log.Printf("WebView2 runtime not available")
@@ -89,20 +124,25 @@ func openApp(h http.Handler) {
 		return
 	}
 	defer w.Destroy()
+	log.Printf("window: after New")
 	w.SetTitle("DeerKB")
 	w.SetSize(1520, 960, webview.HintNone)
 	w.SetSize(1240, 780, webview.HintMin)
 	// No right-click menu: it would show browser commands such as Reload and View Source.
 	w.Init(`document.addEventListener("contextmenu", function (e) { e.preventDefault(); });`)
 	w.Init(bridgeShim)
+	log.Printf("window: after Init")
 	if err := w.Bind("rpc", rpcBinding(h)); err != nil {
 		log.Printf("bind rpc: %v", err)
 	}
-	if err := w.Bind("quit", w.Terminate); err != nil {
+	if err := w.Bind("quit", quitBinding(w)); err != nil {
 		log.Printf("bind quit: %v", err)
 	}
+	log.Printf("window: after Bind")
 	w.SetHtml(string(page))
+	log.Printf("window: before Run")
 	w.Run()
+	log.Printf("window: after Run returned")
 }
 
 // messageBox shows a Windows message box. It is used only when the window cannot start.

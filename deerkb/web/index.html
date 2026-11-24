@@ -47,9 +47,9 @@ button:disabled, input:disabled, select:disabled { cursor: not-allowed; opacity:
 .ic { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .grow { flex: 1; }
 
-/* shell */
-.app { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; height: 100vh; }
-.topbar { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; min-height: 44px; padding: 6px 16px; background: var(--glass); -webkit-backdrop-filter: blur(24px) saturate(1.6); backdrop-filter: blur(24px) saturate(1.6); border-bottom: 1px solid var(--bd); }
+/* shell: the app fills the window. Only the inspector body and the profile list scroll, inside their own panels. */
+.app { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; height: 100vh; min-height: 0; overflow: hidden; }
+.topbar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; min-height: 48px; padding: 8px 16px; background: var(--panel); border-bottom: 1px solid var(--bd); }
 .brand { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; }
 /* placeholder brand mark: replace the DK text with the real icon later */
 .brand-mark { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 6px; background: var(--accent-soft); color: var(--accent); font-size: 9px; font-weight: 600; letter-spacing: .02em; }
@@ -60,11 +60,14 @@ button:disabled, input:disabled, select:disabled { cursor: not-allowed; opacity:
 .dot[data-tone="info"] { background: var(--info); }
 .dot[data-tone="bad"] { background: var(--bad); }
 .main { display: grid; grid-template-columns: 280px minmax(0, 1fr) 340px; grid-template-rows: minmax(0, 1fr); gap: 16px; min-height: 0; padding: 16px; overflow: hidden; width: 100%; max-width: 1880px; margin: 0 auto; }
-.pane { display: flex; flex-direction: column; gap: 8px; min-width: 0; min-height: 0; overflow: auto; }
+.pane { display: flex; flex-direction: column; gap: 8px; min-width: 0; min-height: 0; overflow: hidden; }
 .pane > .card { flex: none; }
 .side { grid-column: 1; }
 .center { grid-column: 2; }
+.center > .notice { flex: none; }
 .inspector { grid-column: 3; gap: 8px; }
+.inspector > .seg, .inspector > .target { flex: none; }
+.inspector-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 8px; overflow: auto; }
 .footer { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 16px; padding: 8px 16px; background: var(--panel); border-top: 1px solid var(--bd); }
 .foot-status { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .dirty { display: flex; align-items: center; gap: 8px; font-weight: 500; }
@@ -84,7 +87,7 @@ button:disabled, input:disabled, select:disabled { cursor: not-allowed; opacity:
 .between { justify-content: space-between; }
 .field { display: flex; flex-direction: column; gap: 4px; min-width: 0; color: var(--mut); font-size: 13px; }
 .field-label { color: var(--mut); font-size: 13px; }
-.input { width: 100%; min-height: 36px; padding: 0 10px; border: 1px solid var(--bd-strong); border-radius: 8px; background: var(--input); color: var(--fg); }
+.input { width: 100%; min-height: 32px; padding: 0 10px; border: 1px solid var(--bd-strong); border-radius: 8px; background: var(--input); color: var(--fg); }
 .input:focus { border-color: var(--accent); outline: 3px solid var(--accent-ring); outline-offset: 0; }
 .input.num { width: 96px; }
 .mm { display: flex; align-items: center; gap: 6px; }
@@ -97,7 +100,7 @@ input[type="range"]::-webkit-slider-runnable-track { height: 4px; border-radius:
 input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; margin-top: -5px; border: 1px solid rgba(0,0,0,.35); border-radius: 50%; background: #ededf0; }
 input[type="range"]::-moz-range-track { height: 4px; border-radius: 999px; background: var(--track); }
 input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border: 1px solid rgba(0,0,0,.35); border-radius: 50%; background: #ededf0; }
-input[type="color"] { width: 40px; height: 36px; padding: 0; border: 1px solid var(--bd-strong); border-radius: 8px; background: none; }
+input[type="color"] { width: 40px; height: 32px; padding: 0; border: 1px solid var(--bd-strong); border-radius: 8px; background: none; }
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .target { margin: 0; color: var(--mut); font-size: 13px; }
 .notice { display: flex; align-items: center; gap: 8px; margin: 0; padding: 8px 12px; border: 1px solid var(--bd); border-left: 2px solid var(--warn); border-radius: 12px; background: var(--card); font-size: 13px; }
@@ -105,7 +108,7 @@ input[type="color"] { width: 40px; height: 36px; padding: 0; border: 1px solid v
 .search { display: block; }
 
 /* buttons */
-.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 36px; padding: 0 14px; border: 1px solid var(--bd-strong); border-radius: 8px; background: var(--raised); color: var(--fg); font-weight: 500; white-space: nowrap; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 32px; padding: 0 14px; border: 1px solid var(--bd-strong); border-radius: 8px; background: var(--raised); color: var(--fg); font-weight: 500; white-space: nowrap; }
 .btn:hover:not(:disabled) { background: var(--hover); }
 .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
 .btn.primary:hover:not(:disabled) { background: var(--accent-hover); border-color: var(--accent-hover); }
@@ -114,13 +117,14 @@ input[type="color"] { width: 40px; height: 36px; padding: 0; border: 1px solid v
 .btn.destructive { background: var(--bad-fill); border-color: var(--bad-fill); color: #fff; }
 .btn.destructive:hover:not(:disabled) { background: #c42f2f; border-color: #c42f2f; }
 .btn[aria-pressed="true"] { background: var(--hover); border-color: var(--mut); }
-.tb-group { display: flex; align-items: center; gap: 2px; padding: 3px; border: 1px solid var(--bd-strong); border-radius: 999px; background: var(--glass); -webkit-backdrop-filter: blur(24px) saturate(1.6); backdrop-filter: blur(24px) saturate(1.6); }
-.tb-group .btn { min-height: 30px; padding: 0 12px; border-radius: 999px; }
-.tb-btn { display: grid; place-items: center; width: 30px; height: 30px; border: 0; border-radius: 999px; background: transparent; color: var(--fg); }
+.tb-group { display: flex; align-items: stretch; overflow: hidden; border: 1px solid var(--bd-strong); border-radius: 8px; background: var(--raised); }
+.tb-group .btn { min-height: 32px; padding: 0 12px; border: 0; border-radius: 0; background: transparent; }
+.tb-group .btn:hover:not(:disabled) { background: var(--hover); }
+.tb-btn { display: grid; place-items: center; width: 32px; height: 32px; border: 0; border-radius: 0; background: transparent; color: var(--fg); }
 .tb-btn:hover { background: var(--hover); }
 .acts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
-.seg { display: flex; gap: 2px; padding: 3px; border: 1px solid var(--bd-strong); border-radius: 999px; background: var(--raised); }
-.seg button { flex: 1; min-height: 28px; padding: 4px 12px; border: 0; border-radius: 999px; background: transparent; color: var(--mut); font-weight: 500; }
+.seg { display: flex; gap: 2px; padding: 2px; border: 1px solid var(--bd-strong); border-radius: 999px; background: var(--raised); }
+.seg button { flex: 1 1 0; min-width: 0; min-height: 26px; padding: 0 12px; border: 0; border-radius: 999px; background: transparent; color: var(--mut); font-weight: 500; }
 .seg button:hover { color: var(--fg); }
 .seg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
 .switch { display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; }
@@ -136,18 +140,20 @@ input[type="color"] { width: 40px; height: 36px; padding: 0; border: 1px solid v
 .swatch-x { position: absolute; top: -5px; right: -5px; display: grid; place-items: center; width: 16px; height: 16px; padding: 0; border: 1px solid var(--bd-strong); border-radius: 50%; background: var(--raised); color: var(--fg); font-size: 11px; line-height: 1; }
 .swatch-x:hover { background: var(--hover); }
 .swatch-x .ic { width: 10px; height: 10px; }
-.cur { flex: none; width: 36px; height: 36px; border: 1px solid var(--bd-strong); border-radius: 8px; }
+.cur { flex: none; width: 32px; height: 32px; border: 1px solid var(--bd-strong); border-radius: 8px; }
 .tint-sw { flex: none; width: 18px; height: 18px; border: 1px solid var(--bd-strong); border-radius: 6px; }
 .fx-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
-.fx { min-height: 36px; padding: 6px 10px; border: 1px solid var(--bd-strong); border-radius: 8px; background: var(--raised); color: var(--fg); text-align: left; overflow-wrap: anywhere; }
+.fx { min-height: 32px; padding: 6px 10px; border: 1px solid var(--bd-strong); border-radius: 8px; background: var(--raised); color: var(--fg); text-align: left; overflow-wrap: anywhere; }
 .fx:hover:not(:disabled) { background: var(--hover); }
 .fx[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
 .note { margin: 0; color: var(--mut); font-size: 12px; }
 .btn, .tb-btn, .seg button, .prof, .key, .input, .swatch, .switch input { transition: background-color .15s ease, border-color .15s ease, color .15s ease; }
 
 /* profiles and device */
-.plist { display: flex; flex-direction: column; gap: 2px; min-height: 120px; max-height: 420px; margin: 0; padding: 0; overflow: auto; list-style: none; }
-.prof { position: relative; display: flex; align-items: center; gap: 8px; width: 100%; height: 36px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; color: var(--fg); text-align: left; }
+/* the profile card takes the height left under the device card; only its list scrolls */
+.side > .profiles { flex: 1 1 0; min-height: 0; }
+.plist { display: flex; flex-direction: column; gap: 2px; flex: 1 1 0; min-height: 0; margin: 0; padding: 0; overflow: auto; list-style: none; }
+.prof { position: relative; display: flex; align-items: center; gap: 8px; width: 100%; height: 32px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; color: var(--fg); text-align: left; }
 .prof:hover { background: var(--row-hover); }
 .prof[aria-current="true"] { background: var(--row-on); font-weight: 500; }
 .prof[aria-current="true"]::before { content: ""; position: absolute; left: 0; top: 8px; bottom: 8px; width: 2px; border-radius: 2px; background: var(--accent); }
@@ -166,7 +172,7 @@ input[type="color"] { width: 40px; height: 36px; padding: 0; border: 1px solid v
 .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .sel-count { color: var(--fg); font-weight: 500; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .sel-count[data-none="true"] { color: var(--mut); font-weight: 400; }
-.board-wrap { container-type: inline-size; }
+.board-wrap { container-type: inline-size; flex: 1 1 auto; min-height: 0; overflow: auto; }
 .canvas { position: relative; width: 100%; max-width: 980px; margin: 0 auto; user-select: none; }
 .key { position: absolute; display: flex; flex-direction: column; align-items: center; height: var(--u); padding: 3px 3px 2px; border: 1px solid var(--key-bd); border-radius: 6px; background: var(--key); color: var(--key-fg); font-size: max(9px, calc(var(--u) * .3)); line-height: 1.1; overflow: hidden; }
 .key:hover:not(:disabled) { border-color: var(--bd-hover); }
@@ -204,18 +210,24 @@ dialog::backdrop { background: rgb(0 0 0 / .6); }
 dialog h2 { margin: 0 0 8px; font-size: 15px; font-weight: 600; }
 dialog p { margin: 0 0 16px; color: var(--mut); }
 .actions { display: flex; justify-content: flex-end; gap: 8px; }
-.toasts { position: fixed; right: 16px; bottom: 88px; z-index: 20; display: flex; flex-direction: column; gap: 8px; width: min(380px, calc(100vw - 32px)); }
+.toasts { position: fixed; right: 16px; bottom: 72px; z-index: 20; display: flex; flex-direction: column; gap: 8px; width: min(380px, calc(100vw - 32px)); }
 .toast { padding: 10px 12px; border: 1px solid var(--bd-strong); border-left: 2px solid var(--info); border-radius: 12px; background: var(--card); font-size: 13px; overflow-wrap: anywhere; }
 .toast strong { display: block; font-size: 12px; font-weight: 500; }
 .toast.ok { border-left-color: var(--ok); }
 .toast.error { border-left-color: var(--bad); }
 
-/* tall windows: the cards keep their content height instead of stretching */
+/* tall windows: the cards keep their content height instead of stretching; the board card takes the spare height */
 #boardCard, #livePanel { align-content: start; }
+#boardCard { flex: 1 1 auto; min-height: 0; }
 
 /* wide: a narrower sidebar and inspector leave the centre column (the board) most of the window */
 @media (min-width: 1240px) {
-  .main { grid-template-columns: 240px minmax(0, 1fr) 300px; gap: 12px; }
+  .main { grid-template-columns: 240px minmax(0, 1fr) 300px; gap: 16px; }
+}
+
+/* desktop: the page itself never scrolls; the panels do */
+@media (min-width: 1100px) {
+  html, body { overflow: hidden; }
 }
 /* very wide: the sidebar and inspector may grow again, but no further */
 @media (min-width: 1800px) {
@@ -230,10 +242,11 @@ dialog p { margin: 0 0 16px; color: var(--mut); }
   .center { grid-column: 2; grid-row: 1; }
   .inspector { grid-column: 2; grid-row: 2; }
   .pane { overflow: visible; }
-  .plist { max-height: 320px; }
+  .side > .profiles { flex: none; }
+  .plist { flex: none; min-height: 120px; max-height: 320px; }
 }
 @media (max-width: 700px) {
-  .main { grid-template-columns: minmax(0, 1fr); padding: 12px; }
+  .main { grid-template-columns: minmax(0, 1fr); padding: 16px; }
   .side, .center, .inspector { grid-column: 1; grid-row: auto; }
   .plist { max-height: 200px; }
   .grid2 { grid-template-columns: 1fr; }
@@ -261,6 +274,7 @@ dialog p { margin: 0 0 16px; color: var(--mut); }
   <symbol id="i-warn" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol>
 </svg>
 
+<div class="app">
 <header class="topbar">
   <div class="brand"><span class="brand-mark" id="brandMark" aria-hidden="true">DK</span>DeerKB</div>
   <span class="chip" id="chip">No keyboard</span>
@@ -275,7 +289,7 @@ dialog p { margin: 0 0 16px; color: var(--mut); }
 
 <div class="main">
   <aside class="pane side" aria-label="Profiles and device">
-    <section class="card col" aria-labelledby="profH">
+    <section class="card col profiles" aria-labelledby="profH">
       <h2 class="eyebrow" id="profH">Profiles</h2>
       <label class="search"><span class="sr">Filter profiles</span><input id="filter" class="input" type="search" placeholder="Filter profiles"></label>
       <div class="acts">
@@ -357,7 +371,7 @@ dialog p { margin: 0 0 16px; color: var(--mut); }
       <button type="button" data-section="remap" aria-pressed="false">Remap</button>
     </div>
     <p class="target" id="target"></p>
-
+    <div class="inspector-body" id="inspectorBody">
     <section class="col" id="p-actuation">
       <div class="row between">
         <label class="field-label" for="act">Actuation point</label>
@@ -452,6 +466,7 @@ dialog p { margin: 0 0 16px; color: var(--mut); }
       <p class="muted row" id="lockedNote"><svg class="ic" aria-hidden="true"><use href="#i-lock"></use></svg><span id="lockedText"></span></p>
       <p class="muted">Set on selection changes the chosen layer in the editor. Fn cannot be remapped.</p>
     </section>
+    </div>
   </aside>
 </div>
 
@@ -463,6 +478,9 @@ dialog p { margin: 0 0 16px; color: var(--mut); }
   <span class="grow"></span>
   <button type="button" class="btn primary" id="writeAll">Write all to keyboard</button>
 </footer>
+</div>
+
+
 
 <dialog id="dlg" aria-labelledby="dlgTitle">
   <form method="dialog">
@@ -746,7 +764,8 @@ function renderDevice() {
 function renderAccess() {
   const edit = canEdit();
   // the board canvas, not the whole card: the toolbar's Select all and Clear stay usable while disconnected
-  for (const id of ['#canvas', '#livePanel', '#inspector']) $(id).inert = !edit;
+  // the inspector's controls, not its section tabs: switching sections stays usable while disconnected
+  for (const id of ['#canvas', '#livePanel', '#inspectorBody']) $(id).inert = !edit;
   $('#offline').hidden = !S.status || edit;
   const write = canWrite();
   const why = writeReason();
