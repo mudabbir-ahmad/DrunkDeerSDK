@@ -15,7 +15,7 @@
   --glass: rgba(14,14,18,.6);
   --accent: #f97316; --accent-hover: #fb923c; --accent-ink: #0a0a0c;
   --accent-soft: rgba(249,115,22,.12); --accent-ring: rgba(249,115,22,.2); --focus: #f97316;
-  --key: #15151a; --key-fg: #8b8b94;
+  --key: #15151a; --key-fg: #8b8b94; --key-edge: #2a2a31; --key-on: #30201a;
   --ok: #3fcf8e; --info: #7fb0ff; --warn: #f5b642; --bad: #ff6b6b; --bad-fill: #d93a3a;
   --sans: "Outfit", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
 }
@@ -29,7 +29,7 @@
   --glass: rgba(255,255,255,.7);
   --accent: #ea580c; --accent-hover: #f97316; --accent-ink: #ffffff;
   --accent-soft: rgba(234,88,12,.1); --accent-ring: rgba(234,88,12,.2); --focus: #ea580c;
-  --key: #ececef; --key-fg: #6b6b75;
+  --key: #ececef; --key-fg: #6b6b75; --key-edge: #d4d4da; --key-on: #ecddd8;
   --ok: #11764a; --info: #2452b8; --warn: #9a6700; --bad: #b42318;
 }
 *, *::before, *::after { box-sizing: border-box; }
@@ -194,6 +194,19 @@ input[type="color"] { width: 40px; height: 32px; padding: 0; border: 1px solid v
 .key .legend, .key .hex, .key .act-label { position: relative; }
 .key[data-act="on"], .key[data-act="on"]:hover:not(:disabled) { border-color: var(--accent); background: var(--accent-soft); color: var(--fg); }
 .key[data-act="on"] .depth-fill { background: var(--accent); }
+
+/* ISO Enter: two buttons drawn as one L. The top button is the tall box and paints the L with two pseudo-elements:
+   a ring (--ring) clipped to the L, and the fill (--fill) clipped inside the ring. The bottom button is a transparent
+   hit area, so a click on either half selects both. Flat colours only. */
+.key.iso-top, .key.iso-bottom { border: 0 !important; background: transparent !important; }
+.key.iso-top { --ring: var(--key-edge); --fill: var(--key); --d: 1px; padding-left: calc(var(--notch) + 3px); }
+.key.iso-top[aria-pressed="true"], .key.iso-top[data-act="on"] { --ring: var(--accent); --fill: var(--key-on); --d: 2px; color: var(--fg); }
+.key.iso-top::before, .key.iso-top::after { content: ""; position: absolute; inset: 0; }
+.key.iso-top::before { background: var(--ring); clip-path: polygon(0 0, 100% 0, 100% 100%, var(--notch) 100%, var(--notch) var(--u), 0 var(--u)); }
+.key.iso-top::after { background: var(--fill); clip-path: polygon(var(--d) var(--d), calc(100% - var(--d)) var(--d), calc(100% - var(--d)) calc(100% - var(--d)), calc(var(--notch) + var(--d)) calc(100% - var(--d)), calc(var(--notch) + var(--d)) calc(var(--u) - var(--d)), var(--d) calc(var(--u) - var(--d))); }
+.key.iso-top > * { z-index: 1; }
+.key.iso-top > .depth-fill, .key.iso-top > .act-line { left: var(--notch); }
+.key.iso-bottom > .legend, .key.iso-bottom > .hex, .key.iso-bottom > .act-label, .key.iso-bottom > .pip, .key.iso-bottom > .sel-dot { visibility: hidden; }
 
 /* live */
 .scale { display: flex; align-items: center; gap: 8px; color: var(--mut); font-size: 12px; }
@@ -551,6 +564,7 @@ const S = {
   actuated: new Set(), // slots that have actuated, kept across polls for the hysteresis in depthState
   palette: [], colour: DEFAULT_COLOUR, // palette is the swatch list; colour is the current paint colour
   pos: new Map(), // slot to normalised board position, for the preview
+  centre: new Map(), ledOrder: [], // slot to key centre in key units; LED slots in layout order, for Ripple and Light by press
   asp: 1, edge: new Set(), path: new Map(), // board width in board-height units; outer keys; key order for Snake
   preview: false, previewWanted: true, previewRaf: 0, previewT0: 0, // previewWanted is the Play/Pause choice
   fwBefore: null,
@@ -1045,7 +1059,8 @@ const measureCtx = document.createElement('canvas').getContext('2d');
 function fitLegend(k, b, u) {
   const el = b.querySelector('.legend');
   const width = k.w * u + (k.w - 1) * KEY_GAP; // the key's width: its units plus the gaps inside it
-  const avail = width - 14; // less 3px padding and 1px border on each side
+  const notch = b.dataset.notch ? Number(b.dataset.notch) * (u + KEY_GAP) : 0; // an ISO Enter's top half loses its notch
+  const avail = width - notch - 14; // less 3px padding and 1px border on each side
   measureCtx.font = `600 100px ${getComputedStyle(el).fontFamily}`;
   const ratio = measureCtx.measureText(el.textContent).width / 100 || 1;
   el.style.fontSize = `${Math.min(Math.max(9, u * 0.3), avail / ratio)}px`;
@@ -1060,6 +1075,19 @@ function buildBoard() {
     b.style.left = `calc(var(--ox, 0px) + (var(--u) + ${KEY_GAP}px) * ${k.x})`;
     b.style.top = `calc((var(--u) + ${KEY_GAP}px) * ${k.y})`;
     b.style.width = `calc(var(--u) * ${k.w} + ${(k.w - 1) * KEY_GAP}px)`;
+    // ISO Enter: the upper half is the tall box that paints the whole L (it covers the gap and the lower row, and
+    // its notch is cut by the CSS clip); the lower half is a transparent hit area drawn over it.
+    const partner = k.shape ? S.layout.keys.find((p) => p.slot === LINK[k.slot]) : null;
+    if (partner && k.y < partner.y) {
+      const dy = partner.y - k.y; // rows between the halves
+      const dx = partner.x - k.x; // units the lower half is indented
+      b.classList.add('iso-top');
+      b.dataset.notch = String(dx);
+      b.style.height = `calc(var(--u) * ${dy + 1} + ${dy * KEY_GAP}px)`;
+      b.style.setProperty('--notch', `calc((var(--u) + ${KEY_GAP}px) * ${dx})`);
+    } else if (partner) {
+      b.classList.add('iso-bottom');
+    }
     // the depth bar and actuation line come first so the text paints over them
     const fill = document.createElement('span');
     fill.className = 'depth-fill';
@@ -1083,6 +1111,13 @@ function buildBoard() {
     $('#canvas').append(b);
     S.keyEls.push({ k, b });
   }
+}
+
+// paintFill sets a lit key's colour. An ISO Enter's top half paints the whole L through --fill, since its own
+// background is transparent.
+function paintFill(b, c) {
+  if (b.classList.contains('iso-top')) b.style.setProperty('--fill', c);
+  else b.style.background = c;
 }
 
 function keyEditable(k) {
@@ -1145,6 +1180,7 @@ function paintKey(e) {
   b.setAttribute('aria-pressed', String(S.sel.has(s)));
   b.querySelector('.pip').hidden = !remapped;
   b.style.background = '';
+  b.style.removeProperty('--fill');
   b.style.color = '';
   e.drawn = ''; // the preview frame must paint this key again
   // the hex code is shown only on the remap section, when Show values is on
@@ -1158,7 +1194,7 @@ function paintKey(e) {
     if (S.section === 'lighting' && isLED(s) && !S.preview) {
       // while the preview runs, its frame loop paints these keys instead
       const c = S.ed.lighting.colors[s];
-      b.style.background = c;
+      paintFill(b, c);
       b.style.color = lum(c) > 0.5 ? '#000' : '#fff';
     }
   }
@@ -1768,6 +1804,14 @@ function front(p, shift, width) {
   return f < width ? 1 - f / width : 0;
 }
 
+// Key presses for Ripple and Light by press. One press happens every PRESS_GAP preview units, on the LED keys in
+// layout order, so the sequence is fixed and repeats. A pressed key is full at once and fades over PRESS_FADE.
+const PRESS_GAP = 0.45;
+const PRESS_FADE = 0.6;
+const RIPPLE_STEP = 0.14; // preview units for the ring to pass one key unit
+const RIPPLE_R = 6; // key units: the ring stops at this distance
+const RIPPLE_LIFE = RIPPLE_R * RIPPLE_STEP + PRESS_FADE; // a press can still light a key for this long after it starts
+
 // previewMode gives one mode effect's brightness (0 to 1) and hue (0 to 1) for a key at time T, in cycles.
 // ix and iy are in board-height units, so rings and bursts look round on the wide board.
 function previewMode(id, slot, p, T) {
@@ -1785,9 +1829,16 @@ function previewMode(id, slot, p, T) {
     case 'spectrum': return [1, rainbow];
     case 'breath': return [0.5 + 0.5 * Math.sin(TAU * T * 0.5), slow];
     case 'press': {
-      const g = T * 1.2 + hash01(slot * 7 + 1) * 8; // each key has its own random glow times
-      const on = hash01(slot * 131 + Math.floor(g)) < 0.12;
-      return [on ? 1 - fract(g) : 0, rainbow];
+      // Only the pressed key glows, then fades. Nothing spreads to its neighbours.
+      const n = S.ledOrder.length;
+      let best = 0;
+      let hue = rainbow;
+      for (let k = Math.floor(T / PRESS_GAP); k >= 0 && T - k * PRESS_GAP < PRESS_FADE; k--) {
+        if (S.ledOrder[k % n] !== slot) continue;
+        const v = 1 - (T - k * PRESS_GAP) / PRESS_FADE;
+        if (v > best) { best = v; hue = fract(k * 0.618); } // each press has its own rainbow hue
+      }
+      return [best, hue];
     }
     case 'stars': {
       const tw = 0.5 + 0.5 * Math.sin(TAU * (T * (0.5 + hash01(slot * 3 + 2)) + hash01(slot * 5 + 1)));
@@ -1797,17 +1848,23 @@ function previewMode(id, slot, p, T) {
     case 'center': return [front(Math.hypot(ix - S.asp / 2, iy - 0.5), T * 0.5, 0.3), rainbow];
     case 'surfdown': return [front(iy, T * 0.5, 0.3), rainbow];
     case 'ripple': {
+      // Each press lights its key at once. Keys around it light after a delay that grows with their distance
+      // (in key units), and fade as the ring passes. Overlapping rings take the brightest value.
+      const n = S.ledOrder.length;
+      const me = S.centre.get(slot);
       let best = 0;
-      for (let i = 0; i < 3; i++) {
-        const g = T * 0.35 + i / 3;
-        const c = Math.floor(g); // each ring starts from a new random centre
-        const age = fract(g);
-        const cx = hash01(c * 31 + i * 7 + 1) * S.asp;
-        const cy = hash01(c * 31 + i * 7 + 9);
-        const d = Math.hypot(ix - cx, iy - cy);
-        best = Math.max(best, (1 - age) * Math.max(0, 1 - Math.abs(d - age * 0.9) / 0.08));
+      let hue = rainbow;
+      if (!n || !me) return [0, rainbow];
+      for (let k = Math.floor(T / PRESS_GAP); k >= 0 && T - k * PRESS_GAP < RIPPLE_LIFE; k--) {
+        const src = S.centre.get(S.ledOrder[k % n]);
+        const d = Math.hypot(me.x - src.x, me.y - src.y);
+        if (d > RIPPLE_R) continue;
+        const age = T - k * PRESS_GAP - d * RIPPLE_STEP;
+        if (age < 0 || age >= PRESS_FADE) continue;
+        const v = 1 - age / PRESS_FADE;
+        if (v > best) { best = v; hue = fract(k * 0.618); } // each press has its own rainbow hue
       }
-      return [best, rainbow];
+      return [best, hue];
     }
     case 'fish': {
       let best = 0;
@@ -1874,7 +1931,7 @@ function previewFrame(now) {
       const c = previewColour(e.k.slot, T);
       if (c === e.drawn) continue;
       e.drawn = c;
-      e.b.style.background = c;
+      paintFill(e.b, c);
       e.b.style.color = lum(c) > 0.5 ? '#000' : '#fff';
     }
   }
@@ -1917,6 +1974,8 @@ function boardPositions() {
   const rows = Math.max(...S.layout.keys.map((k) => k.y)) + 1;
   S.asp = cols / rows;
   S.pos = new Map(S.layout.keys.map((k) => [k.slot, { x: (k.x + k.w / 2) / cols, y: (k.y + 0.5) / rows }]));
+  S.centre = new Map(S.layout.keys.map((k) => [k.slot, { x: k.x + k.w / 2, y: k.y + 0.5 }]));
+  S.ledOrder = S.layout.keys.filter((k) => isLED(k.slot)).map((k) => k.slot);
   S.edge = new Set(S.layout.keys.filter((k) => k.y === 0 || k.y === rows - 1 || k.x === 0 || k.x + k.w === cols).map((k) => k.slot));
   const order = [...S.layout.keys].sort((a, b) => a.y - b.y || (a.y % 2 ? b.x - a.x : a.x - b.x)); // rows run in turn
   S.path = new Map(order.map((k, i) => [k.slot, i]));

@@ -763,6 +763,12 @@ func (k *Keyboard) drainLocked() {
 // sendLocked writes one frame and, when ack is set, waits up to ackTimeout for a reply it matches.
 // A missing ack is reported as acked=false, not an error. A failed write or read drops the link.
 func (k *Keyboard) sendLocked(frame []byte, ack func([]byte) bool) (bool, error) {
+	return k.sendWaitLocked(frame, ack, ackTimeout)
+}
+
+// sendWaitLocked is sendLocked with its own reply timeout. Frames that do not match ack are skipped;
+// hidLink.read logs every frame received, so they stay visible in the log.
+func (k *Keyboard) sendWaitLocked(frame []byte, ack func([]byte) bool, timeout time.Duration) (bool, error) {
 	if k.link == nil {
 		return false, errNotConnected
 	}
@@ -775,7 +781,7 @@ func (k *Keyboard) sendLocked(frame []byte, ack func([]byte) bool) (bool, error)
 	if ack == nil {
 		return true, nil
 	}
-	for deadline := time.Now().Add(ackTimeout); ; {
+	for deadline := time.Now().Add(timeout); ; {
 		rem := time.Until(deadline)
 		if rem <= 0 {
 			return false, nil
@@ -840,6 +846,18 @@ func (k *Keyboard) pauseLocked() func() {
 	if !k.live {
 		return func() {}
 	}
+	_ = k.trackingLocked(false)
+	return func() {
+		if k.live {
+			_ = k.trackingLocked(true)
+		}
+	}
+}
+
+// lightingPauseLocked turns travel tracking off before an RGB write, even when the live view is not on,
+// so the keyboard is not streaming 0xB7 frames during the write. The returned func turns tracking back on
+// only if the live view is still on, so k.live is never changed here.
+func (k *Keyboard) lightingPauseLocked() func() {
 	_ = k.trackingLocked(false)
 	return func() {
 		if k.live {

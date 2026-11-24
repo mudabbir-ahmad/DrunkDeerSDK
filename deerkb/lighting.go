@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // lightEffect is one entry of the Colour tab. Codes are the AE-path mode codes (SDK LightingMode).
@@ -66,6 +67,10 @@ const (
 	cmdLight   = 0xAE
 	rgbPerPacket = 13
 )
+
+// rgbAckTimeout is how long each 0xAE packet waits for its reply. The SDK waits 1000 ms per RGB packet
+// (KeyboardSession.SendLightingPackets, SendAndReceive default).
+const rgbAckTimeout = 1000 * time.Millisecond
 
 func findEffect(id string) (lightEffect, bool) {
 	for _, e := range lightEffects {
@@ -174,6 +179,9 @@ func lightingFrames(eff lightEffect, brightness, speed byte, rgb [keySlots][3]by
 func isLightAck(f []byte) bool { return f[0] == cmdLight }
 
 // ApplyLighting sends the effect, or the custom colours, to the keyboard.
+// Custom (0x13) sends per-key RgbKeyDataPacket frames with the custom colours. Animated modes send the single
+// SetLightingMode frame, the only form this firmware acknowledges, so a tint is kept in the settings but is not
+// applied to them: the effect runs with the firmware's own colours and the step carries a warning.
 func (k *Keyboard) ApplyLighting(ls LightSettings) (Step, error) {
 	k.mu.Lock()
 	defer k.mu.Unlock()
@@ -195,30 +203,41 @@ func (k *Keyboard) ApplyLighting(ls LightSettings) (Step, error) {
 		return Step{}, err
 	}
 	rgb = scaleRGB(rgb, ls.Base)
-	tint, tinted, err := parseTint(ls.Tint)
+	_, tinted, err := parseTint(ls.Tint)
 	if err != nil {
 		return Step{}, err
 	}
 	frames := lightingFrames(eff, byte(ls.Brightness), byte(ls.Speed), rgb)
-	if tinted && eff.Kind == "mode" {
-		frames = tintedFrames(eff, byte(ls.Brightness), tint, ls.Base)
-	}
-	resume := k.pauseLocked()
+	resume := k.lightingPauseLocked()
 	defer resume()
-	acked := true
+	missed := 0
 	for i, f := range frames {
-		ok, err := k.sendLocked(f, isLightAck)
+		ok, err := k.sendWaitLocked(f, isLightAck, rgbAckTimeout)
 		if err != nil {
 			return Step{Name: "Lighting", Warn: err.Error()}, err
 		}
-		if !ok && k.logf != nil {
-			k.logf("Lighting: packet %d of %d: no 0xAE ack within %v", i+1, len(frames), ackTimeout)
+		if !ok {
+			missed++
+			if k.logf != nil {
+				k.logf("Lighting: packet %d of %d: no 0xAE ack within %v", i+1, len(frames), rgbAckTimeout)
+			}
 		}
-		acked = acked && ok
 	}
 	s := Step{Name: "Lighting: " + eff.Label, OK: true}
-	if !acked {
-		s.Warn = "no ack within 500 ms on some packets"
+	if tinted && eff.Kind == "mode" {
+		s.Warn = "the tint is not applied to animated effects on this firmware; the effect was sent with the firmware's own colours"
+	}
+	if missed > 0 {
+		miss := fmt.Sprintf("keyboard did not acknowledge %d of %d lighting packets within %d ms; all packets were sent, but the keyboard may not have applied them",
+			missed, len(frames), rgbAckTimeout.Milliseconds())
+		if s.Warn != "" {
+			s.Warn += "; " + miss
+		} else {
+			s.Warn = miss
+		}
+		if k.logf != nil {
+			k.logf("Lighting: %s (effect %s)", miss, eff.ID)
+		}
 	}
 	return s, nil
 }

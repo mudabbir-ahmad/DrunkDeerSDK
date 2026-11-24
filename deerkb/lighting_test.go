@@ -129,37 +129,27 @@ func TestLightingFramesModeSpeedIndex(t *testing.T) {
 	}
 }
 
-// tintedModeTest checks every frame is an RgbKeyDataPacket with the mode code, and that every LED entry is the tint.
-func TestTintedModeFrames(t *testing.T) {
-	eff, _ := findEffect("ripple")
-	tint, on, err := parseTint("#8000ff")
-	if err != nil || !on {
-		t.Fatalf("parseTint: on %t, err %v", on, err)
+// A tinted animated mode is sent as the single SetLightingMode frame, identical to the untinted one, with no
+// per-key packets, and the step warns that the tint is not applied.
+func TestTintedModeSendsSingleSetFrame(t *testing.T) {
+	want := lightingFrames(lightEffect{ID: "ripple", Kind: "mode", Code: 0x0A}, 9, 5, [keySlots][3]byte{})
+	link := &recordingLink{fakeLink: fakeLink{respond: func([]byte) [][]byte { return nil }}}
+	k := &Keyboard{link: link, model: mA75}
+	step, err := k.ApplyLighting(LightSettings{Effect: "ripple", Brightness: 9, Speed: 5, Base: 9, Tint: "#8000ff"})
+	if err != nil {
+		t.Fatalf("err %v, want none", err)
 	}
-	frames := tintedFrames(eff, 9, tint, 9)
-	if len(frames) == 0 {
-		t.Fatal("no frames")
+	if !step.OK || step.Warn == "" {
+		t.Errorf("step %+v, want OK with the tint warning", step)
 	}
-	entries := 0
-	for n, f := range frames {
-		if f[0] != cmdLight || f[1] != 0x01 {
-			t.Errorf("frame %d: header % x, want AE 01", n, f[:2])
-		}
-		if f[4] != eff.Code {
-			t.Errorf("frame %d: mode_index %#x, want %#x", n, f[4], eff.Code)
-		}
-		if f[5] != 0x06 {
-			t.Errorf("frame %d: index 5 is %#x, want 0x06", n, f[5])
-		}
-		for off := 8; off+3 < len(f) && f[off] != 0xFF; off += 4 {
-			entries++
-			if f[off+1] != 0x80 || f[off+2] != 0x00 || f[off+3] != 0xFF {
-				t.Errorf("frame %d entry at %d: colour % x, want 80 00 ff", n, off, f[off+1:off+4])
-			}
+	var ae [][]byte
+	for _, f := range link.sent {
+		if f[0] == cmdLight {
+			ae = append(ae, f)
 		}
 	}
-	if entries != len(isoLEDs) {
-		t.Errorf("tinted entries: got %d, want %d", entries, len(isoLEDs))
+	if len(ae) != 1 || !reflect.DeepEqual(ae[0], want[0]) {
+		t.Errorf("0xAE frames %x, want one SetLightingMode frame %x", ae, want)
 	}
 }
 
@@ -258,5 +248,80 @@ func TestSendLockedLightingAck(t *testing.T) {
 	ok, err = k.sendLocked(frame, isLightAck)
 	if err != nil || ok {
 		t.Errorf("no reply: ok %t, err %v, want not acked and no error", ok, err)
+	}
+}
+
+// recordingLink is a fakeLink that also keeps every frame written to it, in order.
+type recordingLink struct {
+	fakeLink
+	sent [][]byte
+}
+
+func (l *recordingLink) write(frame []byte) error {
+	l.sent = append(l.sent, append([]byte(nil), frame...))
+	return l.fakeLink.write(frame)
+}
+
+// The lighting apply path turns travel tracking off before its first RGB packet, whether or not the live
+// view is on. Tracking is turned back on afterwards only when the live view is on, and k.live is unchanged.
+func TestApplyLightingTurnsTrackingOffFirst(t *testing.T) {
+	ackAE := make([]byte, frameLen)
+	ackAE[0] = cmdLight
+	respond := func(f []byte) [][]byte {
+		if f[0] == cmdLight {
+			return [][]byte{ackAE}
+		}
+		return nil
+	}
+	for _, live := range []bool{true, false} {
+		link := &recordingLink{fakeLink: fakeLink{respond: respond}}
+		k := &Keyboard{link: link, model: mA75, live: live}
+		step, err := k.ApplyLighting(LightSettings{Effect: "always", Brightness: 9, Speed: 5, Base: 9})
+		if err != nil || !step.OK || step.Warn != "" {
+			t.Fatalf("live %t: step %+v, err %v", live, step, err)
+		}
+		want := 2
+		if live {
+			want = 3
+		}
+		if len(link.sent) != want {
+			t.Fatalf("live %t: %d frames written, want %d", live, len(link.sent), want)
+		}
+		if got := link.sent[0]; !reflect.DeepEqual(got, padFrame(cmdKeyPoint, subTracking, 0x00)) {
+			t.Errorf("live %t: first frame %x, want tracking off", live, got[:4])
+		}
+		if link.sent[1][0] != cmdLight {
+			t.Errorf("live %t: second frame %x, want the 0xAE lighting packet", live, link.sent[1][:4])
+		}
+		if live {
+			if got := link.sent[2]; !reflect.DeepEqual(got, padFrame(cmdKeyPoint, subTracking, 0x01)) {
+				t.Errorf("live %t: last frame %x, want tracking back on", live, got[:4])
+			}
+		}
+		if k.live != live {
+			t.Errorf("live %t: k.live changed to %t", live, k.live)
+		}
+	}
+}
+
+// A keyboard that never acks an 0xAE packet still gets every packet sent. The step is OK with a warning.
+func TestApplyLightingSilentKeyboardWarns(t *testing.T) {
+	link := &recordingLink{fakeLink: fakeLink{respond: func([]byte) [][]byte { return nil }}}
+	k := &Keyboard{link: link, model: mA75}
+	step, err := k.ApplyLighting(LightSettings{Effect: "always", Brightness: 9, Speed: 5, Base: 9})
+	if err != nil {
+		t.Fatalf("err %v, want none", err)
+	}
+	if !step.OK || step.Warn == "" {
+		t.Errorf("step %+v, want OK with a warning about the missing ack", step)
+	}
+	ae := 0
+	for _, f := range link.sent {
+		if f[0] == cmdLight {
+			ae++
+		}
+	}
+	if ae != 1 {
+		t.Errorf("%d 0xAE packets sent, want 1", ae)
 	}
 }
